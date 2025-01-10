@@ -1,0 +1,243 @@
+---
+title: "Figure S3 & S4: WGCNA module characterization"
+author: "Rachel Smith"
+output: pdf_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(fig.width = 2.5, fig.height = 2, collapse = TRUE, warning = FALSE, message = FALSE, echo = FALSE)
+
+## Set paths and load data
+base_dir <- "~/Documents/PhD/projects/sgacc_wgcna_grcca/"
+figures_dir <- paste0(base_dir, "outputs/updated_figures/figures/FigS3_4_WGCNAenrichment/")
+tables_dir <- paste0(base_dir, "outputs/updated_figures/tables/")
+analysis_objects_dir <- paste0(base_dir, "outputs/updated_figures/objects/FigS3_4_WGCNAenrichment/")
+
+source(paste0(base_dir, "scripts/full_analysis_scripts/scripts/setup.R"))
+
+## Load data objects for plots
+objects <- list.files(analysis_objects_dir)
+objects <- objects[!str_detect(objects, "null|archive")]
+for (obj in objects){
+  print(paste0("loading ", obj, "...."))
+  load(paste0(analysis_objects_dir, obj))
+}
+```
+
+### A | Module sizes
+
+```{r FigS3a.plot}
+figS3a <- df_modules_filt %>% 
+    dplyr::count(module, color) %>% 
+    ggplot(aes(x = module, y = n)) +
+    geom_col(aes(fill = module), color = "black", linewidth = 0.25) +
+    geom_text(aes(label = n), size = 3, angle = 45, hjust = 0, vjust = 0) +
+    scale_fill_manual(values = module_colors) +
+    coord_cartesian(clip = "off") +
+    labs(title = "A | Module sizes",
+         x = NULL, y = "Number of genes") +
+    theme(legend.position = "none",
+          axis.text.x = element_text(angle = 45, hjust = 0.9, size = 8)
+    )
+```
+
+```{r FigS3a.save, fig.width = 3.5, fig.height = 2.5}
+figS3a
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(figures_dir, "A.Module_sizes", .x), width = 3.5, height = 2.5)
+)
+```
+
+### B | Semantic themes across module GO results
+
+```{r FigS3b.prep}
+## Extract topic descriptions (frequent words)
+# FREX weights words by frequency and exclusivity to the topic
+df_word_beta <- tidy(topic_model, matrix = "beta") %>%
+    group_by(topic) %>%
+    arrange(topic, -beta) %>% 
+    top_n(n = 10, wt = beta) %>%
+    mutate(topic = paste0("topic ", topic)) %>% 
+    dplyr::filter(!str_detect(term, "cell"))
+
+## Extract topic probabilities for each module (document)
+df_group_gamma <- tidy(
+    topic_model, 
+    matrix = "gamma",
+    document_names = rownames(go_sparse)
+) %>% 
+    mutate(module = factor(document)) %>% 
+    dplyr::select(module, topic, gamma) %>% 
+    mutate(topic = factor(topic, levels = seq(n_topics, 1, by = -1)),
+           module = paste0("geneM", module) %>% factor(levels = paste0("geneM", levels(module)))
+    ) %>% 
+    dplyr::filter(gamma > 0.01)
+```
+
+```{r FigS3b.plot}
+## Plot word strength of association with each topic
+p_figS3b_beta <- df_word_beta %>% 
+    ggplot(aes(x = reorder_within(term, beta, topic), y = beta, fill = beta)) +
+    geom_col(color = "#222222") +
+    geom_text(aes(label = term, y = 0.001, size = beta), color = "black", angle = 90, hjust = 0) +
+    facet_wrap(vars(topic), ncol = 1, scales = "free_x") +
+    scale_x_reordered() +
+    scale_y_continuous(limits = c(0, 0.06), breaks = c(0, 0.05)) +
+    scale_size_continuous(range = c(2, 3), guide = "none") +
+    scale_fill_gradient(low = "white", high = "blue", guide = "none", limits = c(0, 0.058)) +
+    labs(x = NULL, y = "Word strength of association with each topic") +
+    theme(axis.text.x = element_blank(),
+          axis.ticks.x = element_blank()
+    )
+
+## Plot module strength of association with each topic
+p_figS3b_gamma <- df_group_gamma %>%
+    ggplot(aes(x = gamma, y = topic, color = module)) +
+    geom_jitter(aes(alpha = gamma), position = position_jitter(seed = 2, width = 0.15)) +
+    geom_text_repel(aes(alpha = gamma, label = module), size = 3, box.padding = 0.2, min.segment.length = 0,
+                    max.overlaps = 15, position = position_jitter(seed = 2, width = 0.15)) +
+    geom_hline(yintercept = c(1.5, 2.5, 3.5, 4.5, 5.5), color = "black", linewidth = 0.25) +
+    scale_color_manual(values = module_colors) +
+    labs(x = "Module strength of association \nwith each topic", y = NULL) +
+    theme(legend.position = "none",
+          axis.text.y = element_blank()
+    )
+
+```
+
+```{r FigS3b.save, fig.width = 4, fig.height = 6.5}
+p_figS3b_beta + p_figS3b_gamma + plot_layout(widths = c(1, 2)) + plot_annotation(title = "B | Semantic themes across module GO results")
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(figures_dir, "B.topic_modeling", .x), width = 4, height = 6.5)
+)
+```
+
+### C | Cell-type enrichment of GO modules
+
+```{r FigS3c.prep}
+df_figS3c <- df_mods_cell_type_hypergeometric %>%
+    mutate(
+        p_adj = ifelse(p_adj == 0, 10^-15, p_adj),
+        color = ifelse(p_value < 0.05, paste0(module), NA) %>% factor,
+        label = case_when(
+            p_adj < 0.05 & p_adj > 0.01 ~ "*",
+            p_adj < 0.01 & p_adj > 0.001 ~ "**",
+            p_adj < 0.001 ~ "***",
+            TRUE ~ ""
+        )
+    )
+```
+
+```{r FigS3c.plot}
+figS3c <- df_figS3c %>% 
+    ggplot(aes(x = cell_type, y = module)) +
+    geom_tile(aes(fill = color, alpha = -log10(p_adj), color = color), 
+              width = 0.95, height = 0.95, linewidth = 0.5) +
+    geom_text(aes(label = label), vjust = 0.75, size = 3.5) +
+    #annotate(geom = "text", label = "* = FDR < 0.05", x = 6.5, y = 1, size = 3) +
+    scale_alpha_continuous(range = c(0.1, 1), na.value = 1) +
+    scale_fill_manual(values = module_colors, na.value = "transparent", guide = "none") +
+    scale_color_manual(values = module_colors, na.value = "transparent", guide = "none") +
+    guides(alpha = guide_legend(title = "-log10(FDR)", title.position = "top", title.hjust = 0.5)) +
+    labs(title =  "C | Cell-type enrichment", 
+         x = NULL, y = NULL
+    ) +
+    theme(legend.position = "bottom",
+          legend.margin = margin(t = -12),
+          legend.key.size = unit(0.3, "cm"),
+          legend.justification = "center",
+          axis.text.x = element_text(angle = 45, hjust = 0.9)
+    )
+```
+
+```{r FigS3c.save, fig.height = 4, fig.width = 3.5}
+figS3c
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(figures_dir, "C.cell_type_enrichment", .x), width = 3.5, height = 4)
+)
+```
+
+### D | Developmental trajectory of each module per PsychENCODE data
+
+```{r FigS3d.plot}
+figS3d <- df_expr_mod_median %>% 
+    ggplot(aes(x = window, y = median_expr, color = module, fill = module)) +
+    geom_smooth(method = "loess") +
+    geom_vline(xintercept = 5, linewidth = 0.2) +
+    facet_wrap( ~ module, scales = "free_y", nrow = 3) +
+    scale_fill_manual(values = module_colors) +
+    scale_color_manual(values = module_colors) +
+    labs(x = "Developmental window", y = "Median expression (PsychENCODE)", 
+         title = "D | Developmental expression trajectory of each module") +
+    theme(legend.position = "none",
+          strip.text.x = element_text(size = 9),
+          strip.background = element_rect(fill = "white"),
+          axis.text.x = element_blank()
+    )
+```
+
+```{r FigS3d.save, fig.width = 7.5, fig.height = 3}
+figS3d
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(figures_dir, "D.developmental_trajectories", .x), width = 7.5, height = 3)
+)
+```
+
+### Fig S4: full module functional enrichments
+
+```{r FigS4.prep}
+df_figS4 <- df_mods_go %>% 
+    clean_names %>% 
+    dplyr::filter(!is.na(description) & module != 0) %>% 
+    
+    # take top 5 paths by p-value per module to plot
+    dplyr::group_by(module) %>% 
+    arrange(module, -p_adjust) %>% 
+    mutate(row = row_number(),
+           gene_ratio = parse(text = gene_ratio) %>% eval
+    ) %>% 
+    top_n(n = 4, wt = row) %>% 
+    #slice_max(order_by = -weight_fisher, n = 5) %>% 
+    mutate(`survives FDR` = ifelse(p_adjust < 0.05, "yes", "no")) %>% 
+    mutate(description = str_wrap(description, width = 18))
+```
+
+```{r FigS4.plot}
+figS4 <- df_figS4 %>% 
+    ggplot(aes(x = p_adjust, y = reorder_within(description, within = module, by = -p_adjust))) +
+    #y = reorder_within(str_wrap(description, width = 35), -pvalue, module))) +
+    geom_point(aes(size = gene_ratio, fill = ontology, color = `survives FDR`),
+               shape = 21, stroke = 1) +
+    geom_vline(aes(xintercept = 0.05), linewidth = 1, color = "gray") +
+    facet_wrap(vars(module), scales = "free", ncol = 5) +
+    scale_size_continuous(range = c(1, 4)) +
+    scale_color_manual(values = c("yes" = "black", "no" = "transparent")) +
+    scale_y_reordered() +
+    scale_x_reverse(breaks = c(0.25, 0.15, 0.05, 0)) +
+    coord_cartesian(clip = "off") +
+    labs(y = NULL, x = "Enrichment FDR",
+         title = "S4 | WGCNA module GO enrichments"
+    ) +
+    guides(size = guide_legend(title = "Gene ratio")) +
+    theme(legend.position = c(0.85, 0.03),
+          legend.direction = "vertical",
+          legend.title.position = "top",
+          #legend.justification = "center",
+          strip.background = element_rect(fill = "white"),
+          strip.text = element_text(size = 8),
+          axis.text = element_text(size = 8)
+    )
+```
+
+```{r FigS4.save, fig.height = 10, fig.width = 8}
+figS4
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(figures_dir, "S4.full_module_enrichments", .x), width = 8, height = 10)
+)
+```
+

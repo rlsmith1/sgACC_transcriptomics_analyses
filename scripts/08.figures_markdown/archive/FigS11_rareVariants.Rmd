@@ -1,0 +1,167 @@
+---
+title: "Figure S11: Role of rare variant enrichment"
+author: "Rachel Smith"
+output: pdf_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(fig.width = 2.5, fig.height = 2, collapse = TRUE, warning = FALSE, message = FALSE, echo = FALSE)
+
+## Load data & functions
+base_dir <- "~/Documents/PhD/projects/sgacc_wgcna_grcca/"
+supplement_figures_dir <- paste0(base_dir, "outputs/updated_figures/figures/supplement/")
+tables_dir <- paste0(base_dir, "outputs/updated_figures/tables/")
+#analysis_objects_dir <- paste0(base_dir, "outputs/updated_figures/objects/Fig4_characterizeGRCCA/")
+
+source(paste0(base_dir, "scripts/full_analysis_scripts/scripts/load_WGCNA_res.R"))
+
+## Load DGE data
+load(paste0(base_dir, "objects/DE_results.RDS")) # df_de_res (generated in A.DGE_analysis.R)
+
+## Load GRCCA data
+load(paste0(base_dir, "objects/GRCCA_results.Rdata")) # df_lvs, df_y_res, df_x_res
+
+## Pull rare variants for plots
+rare_variants <- benchmarking_lists[["SCZ (rare)"]]
+```
+
+```{r setup_labels}
+## Create dataframe of labels for rare variants on plots
+df_rare_variant_labs <- df_x_res %>% 
+    filter(ensembl_gene_id %in% rare_variants) %>% 
+    left_join(df_de_res) %>% 
+    mutate(
+        p_adj_lab = ifelse(p_adj < 0.01, format(p_adj, digits = 3), round(p_adj, 2)),
+        GRCCA_lab = paste0("R=", round(pearsons_r, 2), "; FDR=", p_adj_lab),
+        DGE_lab = paste0("L2FC=", round(log2fold_change*10, 2), "; p=", round(pvalue, 2))
+    ) %>% 
+    dplyr::select(ensembl_gene_id, gene_symbol, GRCCA_lab, DGE_lab)
+```
+
+
+### A | Expression direction of rare variants
+
+```{r FigS11a.prep}
+## Set factor levels for rare variant genes using structure correlation
+rare_variant_order <- df_x_res %>% 
+    filter(ensembl_gene_id %in% rare_variants) %>% 
+    arrange(-pearsons_r) %>% 
+    pull(gene_symbol)
+
+## Pull normalized and corrected expression values for each rare variant-associated gene
+df_figS11a <- df_vsd_regress %>% 
+    dplyr::select(sample, any_of(rare_variants)) %>% 
+    pivot_longer(contains("ENSG"), names_to = "ensembl_gene_id", values_to = "expr") %>% 
+    left_join(df_ensembl_to_symbol, by = join_by(ensembl_gene_id)) %>% 
+    left_join(df_rare_variant_labs, by = join_by(ensembl_gene_id, gene_symbol)) %>% 
+    mutate(
+        dx = case_when(
+            str_detect(sample, "control") ~ "Control",
+            str_detect(sample, "bipolar") ~ "BD",
+            str_detect(sample, "mdd") ~ "MDD",
+            str_detect(sample, "schizo") ~ "SCZ"
+        ) %>% 
+            factor(levels = names(dx_colors)),
+        gene_symbol = factor(gene_symbol, levels = rare_variant_order)
+    )
+```
+
+```{r FigS11a.plot}
+figS11a <- df_figS11a %>% 
+    ggplot(aes(x = dx, y = expr)) +
+    geom_point(aes(color = dx), position = position_jitter(width = 0.2), size = 0.3) +
+    geom_boxplot(aes(color = dx, fill = dx), alpha = 0.1, outlier.shape = NA) +
+    geom_hline(yintercept = 0, color = "black", lty = 2) +
+    geom_text(aes(label = GRCCA_lab), x = Inf, y = -Inf, vjust = -0.5, hjust = 1,
+              check_overlap = TRUE, size = 2.75) +
+    scale_fill_manual(values = dx_colors, guide = "none") +
+    scale_color_manual(values = dx_colors, guide = "none") +
+    facet_wrap(vars(gene_symbol), scales = "free_y", nrow = 3) +
+    labs(x = NULL, y = "Corrected expression value",
+         title = "A | Rare variant-associated gene expression values") +
+    theme(
+        axis.text.x = element_text(angle = 45, hjust = 0.9),
+        strip.text = element_text(size = 9)
+    )
+```
+
+```{r FigS11a.save, fig.height = 4, fig.width = 5}
+figS11a
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supplement_figures_dir, "S11A.rareVariant_gene_expression_values", .x), width = 5, height = 4)
+)
+```
+
+### B | Rare variants in GRCCA structure correlation and DGE L2FC distributions
+
+```{r FigS11b.prep}
+## Create df of all struct cor & L2FC for each gene
+df_figS11b <- df_x_res %>% 
+    left_join(df_de_res, by = join_by(ensembl_gene_id, gene_symbol)) %>% 
+    
+    # pivot DGE and GRCCA stats for facet wrapping
+    pivot_longer(cols = c(pearsons_r, log2fold_change), names_to = "analysis", values_to = "value") %>% 
+    mutate(analysis = ifelse(analysis == "pearsons_r", "GRCCA structure correlation", "DGE L2FC")) %>% 
+    
+    # identify significant genes in each analysis
+    mutate(significant = case_when(
+        analysis == "GRCCA" & p_adj < 0.05 ~ 1,
+        analysis == "DGE" & pvalue < 0.05 ~ 1,
+        TRUE ~ 0
+    ) %>% 
+        factor
+    ) %>% 
+    arrange(significant, abs(value))
+
+## Create separate df that only contains points to plot
+df_figS11b_points <- df_figS11b %>% 
+    dplyr::filter(ensembl_gene_id %in% rare_variants)
+
+## Plotting specificities
+scale_max <- df_x_res %>% pull(pearsons_r) %>% abs %>% max
+jitter_pos <- position_jitter(width = 0.1, seed = 123)
+```
+
+```{r FigS11b.function}
+## Write function to plot distributions
+f_plot_gene_points_distribution <- function(df, df_points) {
+    df %>%
+        ggplot(aes(x = value)) +
+        geom_density() +
+        geom_vline(xintercept = 0, color = "darkgrey") +
+        geom_point(data = df_points, 
+                   mapping = aes(x = value, y = -1, fill = value, color = significant), 
+                   pos = jitter_pos, shape = 21, size = 2
+        ) +
+        geom_text_repel(data = df_points,
+                        mapping = aes(x = value, y = -1, label = gene_symbol),
+                        pos = jitter_pos, 
+                        size = 3, box.padding = 0.5, max.overlaps = 50, force = 10, min.segment.length = 0
+        ) +
+        #facet_wrap(vars(analysis), scales = "free") +
+        
+        scale_fill_gradientn(colors = gene_weight_color_scale, guide = "none") +
+        scale_color_manual(values = c("gray", "black"), guide = "none") +
+        labs(x = NULL, y = NULL, 
+             title = NULL) +
+        theme(axis.text.y = element_blank(),
+              axis.ticks.y = element_blank(),
+              axis.line.y = element_blank()
+        )
+}
+```
+
+
+```{r FigS11b.plot}
+f_plot_gene_points_distribution(df = df_figS11b %>% filter(analysis == "DGE L2FC"), 
+                                df_points = df_figS11b_points %>% filter(analysis == "DGE L2FC")
+) +
+    scale_fill_gradientn(colors = gene_weight_color_scale, limits = c(-0.27, 0.27), guide = "none")
+
+```
+
+```{r FigS11b.save, fig.height = 2, fig.width = 4}
+figS11b
+```
+

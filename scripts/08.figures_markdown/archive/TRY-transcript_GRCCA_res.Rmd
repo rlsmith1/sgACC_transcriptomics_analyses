@@ -1,0 +1,287 @@
+---
+title: "Potential supplement figures: Transcript-level GRCCA results"
+author: "Rachel Smith"
+output: pdf_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(fig.width = 2.5, fig.height = 2, collapse = TRUE, warning = FALSE, message = FALSE, echo = FALSE)
+
+## Set paths and load data
+base_dir <- "~/Documents/PhD/projects/sgacc_wgcna_grcca/"
+figures_dir <- paste0(base_dir, "outputs/figures/Fig5_GRCCAtranscriptsRes/")
+tables_dir <- paste0(base_dir, "outputs/tables/")
+analysis_objects_dir <- paste0(base_dir, "outputs/objects/Fig5_GRCCAtranscriptsRes/")
+
+source(paste0(base_dir, "scripts/full_analysis_scripts/scripts/load_WTCNA_res.R"))
+
+## Load data objects for plots
+objects <- list.files(analysis_objects_dir)
+objects <- objects[!str_detect(objects, "null|archive")]
+for (obj in objects){
+  print(paste0("loading ", obj, "...."))
+  load(paste0(analysis_objects_dir, obj))
+}
+```
+
+### Y weights
+
+```{r, fig.height = 3.5, fig.width = 10}
+p_covariates <- df_y_res %>% 
+    pivot_longer(c(z_score, pearsons_r), names_to = "metric", values_to = "value") %>% 
+    mutate(metric = ifelse(metric == "z_score", "weight z-score", "structure correlation")) %>% 
+    mutate(significance = case_when(
+        metric == "weight z-score" & abs(value) > 2 ~ "*",
+        metric == "structure correlation" & p_adj < 0.05 & p_adj > 0.01 ~ "*",
+        metric == "structure correlation" & p_adj < 0.01 & p_adj > 0.001 ~ "**",
+        metric == "structure correlation" & p_adj < 0.001 ~ "***",
+        TRUE ~ ""
+    )
+    ) %>% 
+    
+    ggplot(aes(x = value, y = reorder_within(covariate, value, model))) +
+    geom_point(aes(size = -log10(p_adj), fill = value), shape = 21) +
+    geom_vline(xintercept = 0, lty = 2) +
+    geom_text(aes(label = significance), size = 4, vjust = -0.15, color = "black") +
+    facet_wrap(model ~ metric, scales = "free", nrow = 1) +
+    
+    scale_fill_gradientn(colors = gene_weight_color_scale) +
+    scale_size_continuous(range = c(2, 6)) +
+    scale_y_reordered() +
+    guides(fill = guide_colorbar(title = NULL),
+           size = guide_legend(title = "-log10(FDR)")) +
+    coord_cartesian(clip = "off") +
+    labs(y = NULL, x = NULL, 
+         title = "Covariate results") +
+    theme(legend.position = "bottom", 
+          legend.justification = "center",
+          legend.box = "horizontal",
+          #legend.justification = "center",
+          #legend.key.size = unit(0.2, 'cm')
+          legend.key.height = unit(0.20, "cm"),
+          legend.key.width = unit(1.0, "cm")
+    )
+p_covariates
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(figures_dir, "covariate_weight_structCor", .x), width = 10, height = 3.5)
+)
+```
+
+### X weights
+
+```{r}
+df_x_res %>% 
+    pivot_wider(id_cols = c(ensembl_transcript_id, transcript_symbol), names_from = model, values_from = pearsons_r) %>% 
+    
+    ggplot(aes(x = includeDim2, y = regressDim2)) +
+    geom_point() +
+    geom_abline(lty = 2) +
+    geom_smooth(method = "lm") +
+    stat_cor()
+```
+
+### Risk gene GSEA
+
+```{r, fig.height = 3, fig.width = 5}
+p_risk_genes <- df_grcca_fgsea_benchmark %>% 
+    mutate(class = ifelse(str_detect(benchmark_list, "SCZ"), "SCZ", "other") %>% factor(levels = c("SCZ", "other"))) %>% 
+    mutate(benchmark_list = str_remove_all(benchmark_list, "SCZ|\\)|\\(") %>% 
+               str_trim %>% 
+               str_replace(", ", ",\n")
+    ) %>% 
+    mutate(label_color = ifelse(padj < 0.05, "white", "black")) %>% 
+    mutate(label = round(NES, 3)) %>% 
+    
+    ggplot(aes(x = benchmark_list, y = 1)) +
+    geom_tile(aes(fill = NES)) +
+    geom_text(aes(label = label, color = I(label_color)), size = 3) +
+    facet_wrap(class ~ model, scales = "free", nrow = 2) +
+    scale_fill_gradientn(colors = gene_weight_color_scale, limits = c(-2, 2)) +
+    guides(fill = guide_colorbar(title.hjust = 0.5, title.position = "left")) +
+    labs(x = NULL, y = NULL,
+         title = "Risk gene enrichment") +
+    theme(axis.text.y = element_blank(),
+          axis.ticks = element_blank(),
+          axis.line = element_blank(),
+          axis.text.x = element_text(margin = margin(t = -3)),
+          legend.margin = margin(r = -15),
+          legend.position = "left",
+          legend.justification = "top",
+          legend.title = element_text(angle = 90),
+          legend.key.height = unit(0.75, "cm"),
+          legend.key.width = unit(0.15, "cm")
+    )
+p_risk_genes
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(figures_dir, "risk_gene_matrices", .x), width = 5, height = 3)
+)
+```
+
+### GO GSEA
+
+```{r, fig.height = 8, fig.width = 9}
+p_go_gsea <- df_grcca_fgsea_go %>% 
+    dplyr::filter(padj < 0.05 & model == "regressDim2") %>% 
+    mutate(direction = ifelse(NES < 0, "down", "up")) %>% 
+    group_by(direction) %>% 
+    mutate(label = ifelse(padj < 0.031, term, "")) %>% 
+    #mutate(label = ifelse(term %in% fig4c_labels, str_wrap(term, 25), "")) %>% 
+    
+    ggplot(aes(x = padj, y = NES)) +
+    geom_point(aes(size = size, fill = NES), color = "gray", shape = 21) +
+    geom_text_repel(aes(label = label), size = 3, force = 5,
+                    box.padding = 0.5, min.segment.length = 0.1, max.overlaps = 30) +
+    geom_hline(yintercept = 0, color = "gray") +
+    facet_wrap(vars(ontology), nrow = 2) +
+    scale_fill_gradientn(colors = rev(brewer.rdbu(100)), limits = c(-3, 3), guide = "none") +
+    scale_size_continuous(range = c(2, 6)) +
+    scale_x_reverse(breaks = c(0, 0.025, 0.05)) +
+    coord_cartesian(clip = "off") +
+    guides(size = guide_legend(title = "n genes in path", title.hjust = 0.5, title.position = "top")) +
+    labs(x = "Enrichment FDR", y = "NES",
+         title = "GRCCA transcript enrichments (regressDim2)") +
+    theme(
+        legend.position = "bottom",
+        legend.key.size = unit(0.3, "cm")
+    )
+p_go_gsea
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(figures_dir, "GO_GSEA", .x), width = 9, height = 8)
+)
+```
+
+### Example transcript plot (relationship with Dim2 & relationship with SCZ)
+
+```{r}
+load(paste0(base_dir, "outputs/objects/FigS2_drugMCA/drug_MCA_results.Rdata")) # df_var_loadings, df_ind_loadings, df_eig
+
+## Identify transcript to plot
+top_transcript <- df_x_res %>% 
+    filter(model == "includeDim2") %>% 
+    top_n(10, pearsons_r) %>% 
+    pull(ensembl_transcript_id)
+
+## Combine transcript expression with Dim 2 scores & diagnosis
+df_dim2_tx <- df_ind_loadings %>% 
+    dplyr::select(sample, dim2) %>% 
+    left_join(
+        df_vsd_regress_filt %>% 
+            dplyr::select(sample, all_of(top_transcript))
+    ) %>% 
+    left_join(
+        df_covariates %>% dplyr::select(sample, dx)
+    ) %>% 
+    pivot_longer(contains("ENST"), names_to = "ensembl_transcript_id", values_to = "expr") %>% 
+    left_join(df_transcript_to_gene) %>% 
+    distinct() %>% 
+    mutate(transcript_symbol = ifelse(is.na(transcript_symbol), ensembl_transcript_id, transcript_symbol))
+
+## Plot correlation between Dim2 score and transcript expression
+df_dim2_tx %>% 
+    ggplot(aes(x = dim2, y = expr)) +
+    geom_point() +
+    geom_smooth(method = "lm") +
+    stat_cor() +
+    facet_wrap(vars(transcript_symbol), scales = "free")
+
+## Plot expression levels across diagnostic groups
+df_dim2_tx %>% 
+    ggplot(aes(x = dx, y = expr)) +
+    geom_point(aes(color = dx), position = position_jitter(width = 0.2), size = 0.5) +
+    geom_boxplot(aes(color = dx, fill = dx), alpha = 0.1, outlier.shape = NA) +
+    geom_hline(yintercept = 0, color = "black", lty = 2) +
+    scale_fill_manual(values = dx_colors, guide = "none") +
+    scale_color_manual(values = dx_colors, guide = "none") +
+    facet_wrap(vars(transcript_symbol), scales = "free_y") +
+    labs(x = NULL, y = "Corrected expression value",
+         title = "Transcript expression values") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 0.9))
+
+```
+
+```{r}
+df_dim2_txAll <- df_ind_loadings %>% 
+    dplyr::select(sample, dim2) %>% 
+    left_join(df_vsd_regress_filt)
+# Run all correlations
+df_x_res_dim2cor <- df_x_res %>% 
+    mutate(
+        dim2_cor = map(
+            .x = ensembl_transcript_id,
+            .f = ~ cor.test(df_dim2_txAll$dim2, df_dim2_txAll[[.x]])$estimate
+        )
+    ) %>% 
+    unnest(cols = c(dim2_cor))
+# Plot
+df_x_res_dim2cor %>% 
+    ggplot(aes(x = dim2_cor, y = pearsons_r)) +
+    geom_point() +
+    stat_cor()
+```
+
+### Gene & transcript correlation
+
+```{r, fig.height = 3, fig.width = 3.5}
+load(paste0(analysis_objects_dir, "../Fig3_GRCCAres/GRCCA_results.Rdata")) # df_x_res
+df_x_res_genes <- df_x_res
+
+objects <- list.files(analysis_objects_dir)
+objects <- objects[!str_detect(objects, "null|archive")]
+for (obj in objects){
+  print(paste0("loading ", obj, "...."))
+  load(paste0(analysis_objects_dir, obj))
+}
+
+## Map transcript to gene and correlate
+p <- df_x_res %>% 
+    filter(model == "regressDim2" & !is.na(ensembl_gene_id)) %>% 
+    group_by(ensembl_gene_id) %>% 
+    summarise(pearsons_r = max(pearsons_r)) %>% 
+    dplyr::rename("transcript_res" = "pearsons_r") %>% 
+    
+    left_join(df_x_res_genes %>% 
+                  dplyr::select(ensembl_gene_id, gene_symbol, pearsons_r) %>% 
+                  dplyr::rename("gene_res" = "pearsons_r")
+    ) %>% 
+    mutate(
+        risk_gene = ifelse(ensembl_gene_id %in% benchmarking_lists[["SCZ (common, prioritized)"]] | ensembl_gene_id %in% benchmarking_lists[["SCZ (rare)"]], "yes", "no"),
+        label = ifelse(risk_gene == "yes", gene_symbol, "")
+    ) %>% 
+    arrange(risk_gene) %>% 
+    
+    ggplot(aes(x = gene_res, y = transcript_res)) +
+    geom_vline(xintercept = 0, color = "gray") +
+    geom_hline(yintercept = 0, color = "gray") +
+    geom_point(aes(fill = gene_res + transcript_res, color = risk_gene, size = risk_gene), shape = 21) +
+    geom_text_repel(aes(label = label), size = 2.5, max.overlaps = 50) +
+    stat_cor() +
+    geom_smooth(method = "lm", color = "black", linewidth = 0.75) +
+    xlim(c(-0.6, 0.6)) +
+    ylim(c(-0.6, 0.6)) +
+    scale_fill_gradientn(colors = gene_weight_color_scale, guide = "none") +
+    scale_color_manual(values = c("yes" = "black", "no" = "transparent")) +
+    scale_size_manual(values = c("yes" = 1.5, "no" = 0.5)) +
+    labs(x = "Gene GRCCA structure correlations", y = "Transcript GRCCA structure correlations",
+         title = "Correspondence between gene & \ntranscript GRCCA results")
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0("~/Downloads/gene_transcript_GRCCA_cor", .x), width = 3.5, height = 3)
+)
+```
+
+```{r}
+## Risk gene transcripts
+df_x_res %>% 
+    filter(ensembl_gene_id %in% benchmarking_lists[["SCZ (common, broad)"]])
+
+## Sig GRCCA transcripts
+sig_grcca_genes <- df_x_res_genes %>% 
+    filter(abs(z_score) >= 2 & p_adj < 0.05) %>% 
+    pull(ensembl_gene_id)
+df_x_res %>% 
+    filter(ensembl_gene_id %in% sig_grcca_genes & ensembl_gene_id %in% benchmarking_lists[["SCZ (common, broad)"]])
+```
+

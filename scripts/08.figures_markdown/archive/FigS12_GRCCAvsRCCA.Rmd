@@ -1,0 +1,155 @@
+---
+title: "Figure S12: Compare GRCCA and RCCA results"
+author: "Rachel Smith"
+output: pdf_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(fig.width = 2.5, fig.height = 2, collapse = TRUE, warning = FALSE, message = FALSE, echo = FALSE)
+
+## Set paths and load data
+base_dir <- "~/Documents/PhD/projects/sgacc_wgcna_grcca/"
+figures_dir <- paste0(base_dir, "outputs/updated_figures/figures/FigS11_GRCCAvsRCCA/")
+tables_dir <- paste0(base_dir, "outputs/updated_figures/tables/")
+analysis_objects_dir <- paste0(base_dir, "outputs/updated_figures/objects/FigS11_GRCCAvsRCCA/")
+
+source(paste0(base_dir, "scripts/full_analysis_scripts/scripts/load_WGCNA_res.R"))
+
+## Load data objects for plots
+objects <- list.files(analysis_objects_dir)
+objects <- objects[!str_detect(objects, "null|archive")]
+for (obj in objects){
+  print(paste0("loading ", obj, "...."))
+  load(paste0(analysis_objects_dir, obj))
+}
+
+## Also load GRCCA results for comparison
+GRCCAres_dir <- paste0(base_dir, "outputs/updated_figures/objects/Fig3_GRCCAres/")
+GRCCAenrich_dir <- paste0(base_dir, "outputs/updated_figures/objects/Fig4_characterizeGRCCA/")
+for (dir in c(GRCCAres_dir, GRCCAenrich_dir)) {
+    objects <- list.files(dir)
+    objects <- objects[!str_detect(objects, "null|archive")]
+    for (obj in objects){
+      print(paste0("loading ", obj, "...."))
+      load(paste0(dir, obj))
+    }
+}
+```
+
+### A | Correlate GRCCA and RCCA covariate (y) structure correlations
+
+```{r FigS11a.plot}
+figS11a <- df_y_res_all %>% 
+    pivot_wider(id_cols = covariate, names_from = analysis, values_from = pearsons_r) %>% 
+    ggplot(aes(x = rcca, y = grcca)) +
+    geom_point(aes(fill = rcca + grcca), shape = 21, size = 2.5) +
+    geom_vline(aes(xintercept = 0), color = "gray") +
+    geom_hline(aes(yintercept = 0), color = "gray") +
+    geom_abline(lty = 2) +
+    geom_text_repel(aes(label = covariate), size = 2.5, max.overlaps = 20, box.padding = 1.25,
+                     nudge_y = 0.3, force = 150) +
+    scale_fill_gradientn(colors = gene_weight_color_scale, limits = c(-1.84, 1.84), guide = "none") +
+    labs(title = "A | Covariate structure \ncorrelations",
+         x = "RCCA", y = "GRCCA")
+```
+
+```{r FigS11a.save}
+figS11a
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(figures_dir, "A.covariate_structCor_correlation", .x), width = fig_width, height = fig_height)
+)
+```
+
+### B | Correlate GRCCA and RCCA gene (x) structure correlations
+
+```{r FigS11b.plot}
+figS11b <- df_x_res_all %>% 
+    pivot_wider(id_cols = ensembl_gene_id, names_from = analysis, values_from = pearsons_r) %>% 
+    ggplot(aes(x = rcca, y = grcca)) +
+    geom_point(aes(color = rcca + grcca), size = 1) +
+    geom_vline(aes(xintercept = 0), color = "gray") +
+    geom_hline(aes(yintercept = 0), color = "gray") +
+    geom_abline(lty = 2) +
+    stat_cor(label.sep = "\n") +
+    #geom_label_repel(aes(label = gene_symbol), size = 3, max.overlaps = 50, box.padding = 1.5) +
+    scale_color_gradientn(colors = gene_weight_color_scale, limits = c(-1.14, 1.14), guide = "none") +
+    labs(title = "B | Gene structure \ncorrelations",
+         x = "RCCA", y = "GRCCA")
+```
+
+```{r FigS11b.save}
+figS11b
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(figures_dir, "B.gene_structCor_correlation", .x), width = fig_width, height = fig_height)
+)
+```
+
+### C | Venn diagram of significant gene overlap (made in PowerPoint)
+
+### D | RCCA results risk gene enrichment
+
+```{r FigS11d.prep}
+df_figS11d <- df_rcca_fgsea_benchmark %>% 
+    mutate(class = ifelse(str_detect(benchmark_list, "SCZ"), "SCZ", "other") %>% factor(levels = c("SCZ", "other"))) %>% 
+    mutate(benchmark_list = str_remove_all(benchmark_list, "SCZ|\\)|\\(") %>% 
+               str_trim %>% 
+               str_replace(", ", ",\n")
+    ) %>% 
+    mutate(sig = case_when(padj < 0.001 ~ "***", padj < 0.01 ~ "**", padj < 0.05 ~ "*", TRUE ~ ""))
+```
+
+```{r FigS11d.plot}
+figS11d <- df_figS11d %>% 
+    ggplot(aes(x = benchmark_list, y = 1)) +
+    geom_tile(aes(fill = NES)) +
+    geom_text(aes(label = sig), size = 6, color = "white", vjust = 0.75) +
+    facet_wrap(vars(class), scales = "free", nrow = 2) +
+    scale_fill_gradient(low = "white", high = "#67001F") +
+    guides(fill = guide_colorbar(title.hjust = 0.5, title.position = "left")) +
+    labs(x = NULL, y = NULL,
+         title = "D | RCCA risk gene \nenrichment") +
+    theme(axis.text.y = element_blank(),
+          axis.ticks = element_blank(),
+          axis.line = element_blank(),
+          axis.text.x = element_text(margin = margin(t = -3)),
+          legend.margin = margin(r = -15),
+          legend.position = "left",
+          legend.justification = "top",
+          legend.title = element_text(angle = 90),
+          legend.key.height = unit(0.75, "cm"),
+          legend.key.width = unit(0.15, "cm")
+    )
+```
+
+```{r FigS11d.save}
+figS11d
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(figures_dir, "D.Risk_gene_enrichment", .x), width = fig_width, height = fig_height)
+)
+```
+
+### E | GRCCA vs RCCA hypergeometric overlap across structure correlation thresholds
+
+```{r FigS11e.plot}
+df_rcca_grcca_hypergeometric_benchmark %>%
+
+    ggplot(aes(x = threshold, y = -log10(p_value))) +
+    geom_hline(aes(yintercept = -log10(0.05)), color = "gray") +
+    #geom_vline(aes(xintercept = length(sig_rcca_genes) / length(ensembl_ids)), lty = 2, color = "#00BFC4") +
+    #geom_vline(aes(xintercept = length(sig_grcca_genes) / length(ensembl_ids)), lty = 2, color = "#F8766D") +
+    geom_point(aes(color = analysis)) +
+    geom_line(aes(group = analysis, color = analysis)) +
+    #annotate(geom = "text", label = "GRCCA sig θ", x = 0.04, y = 3.1, size = 3) +
+    #annotate(geom = "text", label = "RCCA sig θ", x = 0.13, y = 3.1, size = 3) +
+    
+    facet_wrap(vars(benchmark_list), scales = "free_y") +
+    #facet_grid2(benchmark_type ~ benchmark_list, independent = "all", scales = "free") +
+    labs(title = "Hypergeometric overlaps with risk gene lists across structure correlation thresholds",
+         x = "Proportion of genes included (ordered by structure correlation)", y = "-log10(hypergeometric p-value)") +
+    theme(legend.position = "top",
+          legend.justification = "right")
+```
+

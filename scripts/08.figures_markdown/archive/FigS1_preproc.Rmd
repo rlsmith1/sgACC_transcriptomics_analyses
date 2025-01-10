@@ -1,0 +1,128 @@
+---
+title: "Figure S1: Preprocessing steps & justification"
+author: "Rachel Smith"
+output: pdf_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(fig.width = 2.5, fig.height = 2, collapse = TRUE, warning = FALSE, message = FALSE, echo = FALSE)
+
+## Set paths and load data
+base_dir <- "~/Documents/PhD/projects/sgacc_wgcna_grcca/"
+figures_dir <- paste0(base_dir, "outputs/updated_figures/figures/preproc/")
+tables_dir <- paste0(base_dir, "outputs/updated_figures/tables/")
+analysis_objects_dir <- paste0(base_dir, "outputs/updated_figures/objects/preproc/")
+
+source(paste0(base_dir, "scripts/full_analysis_scripts/scripts/setup.R"))
+
+## Load data objects for plots
+objects <- list.files(analysis_objects_dir)
+objects <- objects[!str_detect(objects, "null|archive")]
+for (obj in objects){
+  print(paste0("loading ", obj, "...."))
+  load(paste0(analysis_objects_dir, obj))
+}
+```
+
+### A | Variance explained by qSVs
+
+```{r FigS1a.plot}
+figS1a <- df_qsv_var_expl %>% #dplyr::count(feature)
+    dplyr::filter(feature == "Proportion of Variance" & qSV %in% 1:16) %>%
+    
+    ggplot(aes(x = qSV, y = value*100)) +
+    geom_col(aes(fill = value), color = "black") +
+    geom_hline(yintercept = 0.02*100, color = "maroon") +
+    scale_fill_gradient(low = "white", high = "black", 
+                        limits = c(0, 0.06), guide = "none") +
+    #scale_y_continuous(breaks = seq(0, 0.06, 0.01)) +
+    coord_cartesian(clip = "off") +
+    labs(y = "% variance explained",
+         title = "A | qSV variance explained") +
+    theme(axis.text.x = element_text(angle = 45))
+```
+
+```{r FigS1a.save}
+figS1a
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(figures_dir, "A.qSV_variance_explained", .x), width = fig_width, height = fig_height)
+)
+```
+
+
+### B | Correlate qSVs with known covariates
+
+```{r FigS1b.prep}
+m_covariates <- df_covariates_numeric %>% column_to_rownames("sample") %>% t()
+covariate_order <- m_covariates[hclust(dist(m_covariates))$order,] %>% rownames
+```
+
+```{r FigS1b.plot}
+figS1b <- df_covariate_qsv_cor %>% 
+    mutate(significant = ifelse(p_adj < 0.05, 1, 0) %>% factor,
+           covariate = factor(covariate, levels = covariate_order)) %>% 
+    ggplot(aes(x = qsv, y = covariate)) +
+    geom_tile(aes(fill = pearsons_r, color = significant), width = 0.98, height = 0.98, linewidth = 0.5) +
+    scale_fill_gradientn(colors = rev(brewer.rdbu(100))) +
+    scale_color_manual(values = c("1" = "black", "0" = "transparent"), guide = "none") +
+    coord_cartesian(clip = "off") +
+    guides(fill = guide_colorbar(title = "Pearson's r", title.hjust = 0.5, title.position = "left")) +
+    labs(x = "qSV", y = NULL, 
+         title = "B | Correlate qSVs and known covariates"
+    ) +
+    theme(legend.key.height = unit(1.5, "cm"),
+          legend.key.width = unit(0.1, "cm"),
+          legend.title = element_text(angle = 90),
+          legend.margin = margin(l = -15),
+          axis.text.x = element_text(angle = 45)
+    )
+```
+
+```{r FigS1b.save, fig.height = 5, fig.width = 5.1}
+figS1b
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(figures_dir, "B.qSV_covariate_cor", .x), width = 5.1, height = 5)
+)
+```
+
+### C | PC-covariate correlations before and after covariate regressions
+
+```{r FigS1c.prep}
+df_figS1c <- df_pca1_covar_cor %>% 
+    mutate(regression = "Before", .before = 1) %>% 
+    bind_rows(
+        df_pca3_covar_cor %>% 
+            mutate(regression = "After", .before = 1) 
+    ) %>% 
+    mutate(regression = factor(regression, levels = c("Before", "After")))
+```
+
+```{r FigS1c.plot}
+figS1c <- df_figS1c %>% 
+    ggplot(aes(x = pc, y = covariate)) +
+    geom_tile(aes(fill = pearsons_r, color = significant), width = 0.98, height = 0.98, linewidth = 0.5) +
+    facet_wrap(vars(regression), nrow = 1, scales = "free_x") +
+    force_panelsizes(cols = c(1, 4)) +
+    scale_fill_gradientn(colors = rev(brewer.rdbu(100)), limits = c(-0.43, 0.43)) +
+    scale_color_manual(values = c("yes" = "black", "no" = "transparent"), guide = "none") +
+    coord_cartesian(clip = "off") +
+    guides(fill = guide_colorbar(title = "Pearson's r", title.hjust = 0.5, title.position = "left")) +
+    labs(x = "PC (> 2% explained var)", y = NULL,
+         title = "D | PC-covariate correlations \nbefore vs after regression") +
+    theme(legend.key.height = unit(1.5, "cm"),
+          legend.key.width = unit(0.1, "cm"),
+          legend.title = element_text(angle = 90),
+          legend.margin = margin(l = -15)
+    )
+```
+
+```{r FigS1c.save, fig.height = 6, fig.width = 5}
+figS1c
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(figures_dir, "C.PCA_covariate_cor", .x), width = 5, height = 6)
+)
+```
+

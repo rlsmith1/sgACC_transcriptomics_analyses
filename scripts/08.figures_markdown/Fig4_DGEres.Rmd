@@ -1,0 +1,286 @@
+---
+title: "Figure 4: Differential gene expression analysis results & comparison with GRCCA"
+author: "Rachel Smith"
+output: pdf_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(fig.width = 2.5, fig.height = 2, collapse = TRUE, warning = FALSE, message = FALSE, echo = FALSE)
+
+## Set paths and load data
+base_dir <- "~/Documents/PhD/projects/sgacc_wgcna_grcca/"
+figures_dir <- paste0(base_dir, "outputs/figures/Fig4_DGEres/")
+tables_dir <- paste0(base_dir, "outputs/tables/")
+analysis_objects_dir <- paste0(base_dir, "outputs/objects/Fig4_DGEres/")
+
+source(paste0(base_dir, "scripts/full_analysis_scripts/scripts/setup.R"))
+
+## Load data objects for plots
+objects <- list.files(analysis_objects_dir)
+objects <- objects[!str_detect(objects, "null|archive")]
+for (obj in objects){
+  print(paste0("loading ", obj, "...."))
+  load(paste0(analysis_objects_dir, obj))
+}
+
+## Load GRCCA results (in Fig2_GRCCAres)
+load(paste0(analysis_objects_dir, "../Fig2_GRCCAres/GRCCA_results.Rdata")) # df_x_res
+
+## Load GRCCA enrichments
+load(paste0(analysis_objects_dir, "../Fig3_characterizeGRCCA/GRCCA_enrichment_benchmark_res.Rdata")) # df_grcca_fgsea...
+```
+
+### A | Volcano plot of DEGs
+
+```{r Fig4a.prep}
+df_fig4a <- df_de_res %>% 
+    mutate(gene_symbol = ifelse(is.na(gene_symbol), ensembl_gene_id, gene_symbol)) %>% 
+    mutate(fill = ifelse(pvalue > 0.05, NA_real_, log2fold_change)) %>% 
+    mutate(significant = ifelse(padj < 0.05, "yes", "no")) %>% 
+    mutate(label = ifelse(-log10(pvalue) > 4.2 | (pvalue < 0.05 & abs(log2fold_change) > 0.11), gene_symbol, NA))
+```
+
+```{r Fig4a.plot}
+fig4a <- df_fig4a %>% 
+    ggplot(aes(x = log2fold_change, y = -log10(pvalue))) +
+    geom_point(aes(fill = fill, color = significant), shape = 21, size = 1) +
+    geom_hline(aes(yintercept = -log10(0.05)), lty = 2, linewidth = 0.5, color = "black") +
+    geom_text_repel(aes(label = label), min.segment.length = 0, size = 2) +
+    scale_fill_gradientn(colors = gene_weight_color_scale, 
+                         values = rescale(c(-0.17, 0, 0.17)),
+                         limits = c(-0.171, 0.171),
+                         na.value = "lightgray", guide = "none") +
+    scale_color_manual(values = c("yes" = "black", "no" = "transparent"), na.value = "transparent") +
+    guides(color = guide_legend(title = "FDR < 0.05", title.vjust = -1.5)) +
+    labs(x = "log2(fold change)", y = "-log10(p-value)",
+         title = "A | DEG volcano plot") +
+    theme(#legend.position = c(0.01, 0.91),
+          #legend.spacing.x = unit(0.1, "mm"),
+          #legend.background = element_blank(),
+          #legend.box.background = element_rect(colour = "black")
+        legend.position = "none"
+    )
+```
+
+```{r Fig4a.save, fig.width = 2.17, fig.height = 1.74}
+fig4a
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(figures_dir, "A.DEG_volcano_plot", .x), width = 2.17, height = 1.74)
+)
+```
+
+### B | Top n genes by L2FC t-statistic
+
+```{r Fig4b.plot}
+fig4b <- df_de_res %>% 
+    slice_max(order_by = abs(stat), n = 10) %>% 
+    
+    ggplot(aes(x = stat, y = reorder(gene_symbol, stat))) +
+    geom_point(aes(size = -log10(pvalue), fill = stat), shape = 21) +
+    geom_vline(xintercept = 0, color = "gray") +
+    scale_fill_gradientn(colors = gene_weight_color_scale, 
+                         limits = c(-5, 5), guide = "none") +
+    scale_size_continuous(range = c(1, 4)) +
+    guides(size = guide_legend(title = "-log10(p-value)")) +
+    xlim(c(-5, 5)) +
+    coord_cartesian(clip = "off") +
+    labs(y = NULL, x = "t-statistic", 
+         title ="B | Top 10 DEGs"
+    ) +
+    theme(legend.position = c(0.05, 0.7), 
+          legend.box = "horizontal",
+          legend.key.size = unit(0.35, "cm")
+    )
+```
+
+```{r Fig4b.save, fig.width = 2.17, fig.height = 1.74}
+fig4b
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(figures_dir, "B.top_10_DEGs", .x), width = 2.17, height = 1.74)
+)
+```
+
+### C | GRCCA structure correlations (rx) vs DGE effect size
+
+```{r Fig4c.plot}
+fig4c <- df_x_res %>% 
+    left_join(df_de_res) %>% 
+    
+    ggplot(aes(x = stat, y = pearsons_r)) +
+    geom_hline(yintercept = 0, color = "gray") +
+    geom_vline(xintercept = 0, color = "gray") +
+    geom_point(aes(color = pearsons_r + stat), size = 0.5) +
+    geom_smooth(method = "lm", color = "black", linewidth = 0.5) +
+    stat_cor(aes(label = after_stat(r.label)), label.sep = "\n", size = 3,
+             label.y.npc = "top", vjust = 0) +
+    scale_color_gradientn(colors = gene_weight_color_scale, limits = c(-5.4, 5.4)) +
+    coord_cartesian(clip = "off") +
+    #scale_x_continuous(breaks = c(-0.2, 0, 0.2)) +
+    labs(x = "DGE t-statistic", y = expression("Structure correlation (" * italic(r)[x] * ")"),
+         title = "C | DGE vs GRCCA results"
+    ) +
+    theme(legend.position = "none")
+```
+
+```{r Fig4c.save, fig.width = 2.17, fig.height = 1.74}
+fig4c
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(figures_dir, "C.gene_strucCor_vs_DE_stat", .x), width = 2.17, height = 1.74)
+)
+```
+
+### D | GO enrichments of DEGs
+
+```{r Fig4d.prep}
+## Determine labels
+fig4d_labels <- c(
+    
+    ## BP
+    "adaptive immune response",
+    "inflammatory response",
+    #"positive regulation of T cell activation",
+    "positive regulation of tumor necrosis factor production",
+    "positive regulation of interleukin-6 production",
+    "cellular response to copper ion",
+    "nitric oxide transport",
+    "carbon dioxide transport",
+    
+    ## MF
+    "MHC class II protein complex binding",
+    "extracellular matrix structural constituent",
+    
+    ## CC
+    "clathrin-coated endocytic vesicle membrane",
+    "TCR signalosome"
+)
+
+## Filter for terms of interest & assign labels
+df_fig4d <- df_de_fgsea_go %>% 
+    dplyr::filter(padj < 0.05) %>% 
+    mutate(direction = ifelse(NES < 0, "down", "up")) %>% 
+    group_by(direction) %>% 
+    mutate(label = ifelse(term %in% fig4d_labels, str_wrap(term, 25), ""))
+```
+
+```{r Fig4d.plot}
+fig4d <- df_fig4d %>%
+    ggplot(aes(x = padj, y = NES)) +
+    geom_hline(yintercept = 0, color = "gray") +
+    geom_point(aes(size = size, fill = NES), color = "gray", shape = 21) +
+    geom_text_repel(aes(label = label), size = 2.5, force = 20,
+                    box.padding = 0.5, min.segment.length = 0, max.overlaps = 50) +
+    facet_wrap(vars(ontology), nrow = 1) +
+    scale_fill_gradientn(colors = rev(brewer.rdbu(100)), limits = c(-2.5, 2.5), guide = "none") +
+    scale_size_continuous(range = c(2, 6)) +
+    scale_x_reverse(breaks = c(0, 0.03, 0.05)) +
+    guides(size = guide_legend(title = "n genes in path", title.hjust = 0.5, title.position = "top")) +
+    coord_cartesian(clip = "off") +
+    labs(x = "Enrichment FDR", y = "NES",
+         title = "D | Functional pathway enrichments") +
+    theme(legend.position = "bottom",
+          legend.justification = "center",
+          title.justification = "center",
+          legend.key.size = unit(0.3, "cm")
+    )
+```
+
+```{r Fig4d.save, fig.height = 3.48, fig.width = 4.34}
+fig4d
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(figures_dir, "D.DEG_GO_enrichment", .x), width = 4.34, height = 3.48)
+)
+```
+
+### E | Compare DGE and GRCCA functional enrichments
+
+```{r Fig4e.prep}
+df_fig4e <- df_grcca_fgsea_go %>% 
+    mutate(analysis = "GRCCA", .before = 1) %>% 
+    bind_rows(df_de_fgsea_go %>% 
+                  mutate(analysis = "DGE", .before = 1)
+    ) %>% 
+    mutate(class = ifelse(NES < 0, "NES < 0", "NES > 0")) %>% 
+    filter(padj < 0.05) %>% 
+    count(analysis, class) %>% 
+    mutate(text_color = ifelse(analysis == "DGE", "white", "black"),
+           analysis_color = ifelse(analysis == "GRCCA", "white", "black")
+    )
+```
+
+```{r Fig4e.plot}
+fig4e <- df_fig4e %>% 
+    ggplot(aes(x = analysis, y = n)) +
+    geom_rect(aes(xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf, fill = class), alpha = 0.35) +
+    geom_col(aes(fill = I(analysis_color)), color = "black") +
+    geom_text(aes(label = n, color = I(text_color)), size = 3, vjust = 1.2) +
+    facet_wrap(vars(class)) +
+    scale_fill_manual(values = c("NES < 0" = gene_weight_color_scale[15], "NES > 0" = gene_weight_color_scale[85])) +
+    labs(x = NULL, y = "n pathways (FDR < 0.05)",
+         title = "E | DGE vs GRCCA GO results"
+    ) +
+    theme(
+        #panel.background = element_rect(fill = "transparent"),
+        legend.position = "none",
+        axis.text = element_text(size = 8)
+    )
+```
+
+```{r Fig4e.save, fig.width = 2.17, fig.height = 1.74}
+fig4e
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(figures_dir, "E.GRCCA_vs_DGE_GO", .x), width = 2.17, height = 1.74)
+)
+```
+
+### F | DEG enrichment for GWAS results
+
+```{r Fig4f.prep}
+df_fig4f <- df_de_fgsea_benchmark %>% 
+    mutate(class = ifelse(str_detect(benchmark_list, "SCZ"), "SCZ", "other") %>% factor(levels = c("SCZ", "other"))) %>% 
+    mutate(benchmark_list = str_remove_all(benchmark_list, "SCZ|\\)|\\(") %>% 
+               str_trim %>% 
+               str_replace(", ", ",\n")
+    ) %>% 
+    mutate(label_color = ifelse(padj < 0.05, "white", "black")) %>% 
+    mutate(box_color = ifelse(padj < 0.05, "black", "transparent")) %>% 
+    mutate(label = round(NES, 2) %>% format(digits = 3))
+```
+
+```{r Fig4f.plot}
+fig4f <- df_fig4f %>% 
+    ggplot(aes(x = benchmark_list, y = 1)) +
+    geom_tile(aes(fill = NES, color = I(box_color)), width = 0.95, height = 0.95, linewidth = 0.75) +
+    geom_text(aes(label = label, color = I(label_color)), size = 2.75) +
+    facet_wrap(vars(class), scales = "free", nrow = 2) +
+    scale_fill_gradient(low = "white", high = "#67001F", limits = c(0.838, 1.58)) +
+    guides(fill = guide_colorbar(title.hjust = 0.5, title.position = "left")) +
+    labs(x = NULL, y = NULL,
+         title = "F | Risk gene enrichment") +
+    theme(axis.text.y = element_blank(),
+          axis.ticks = element_blank(),
+          axis.line = element_blank(),
+          axis.text.x = element_text(margin = margin(t = -3)),
+          strip.background = element_rect(fill = "white", color = "black"),
+          strip.text = element_text(size = 9),
+          legend.margin = margin(r = -15),
+          legend.position = "left",
+          legend.justification = "top",
+          legend.title = element_text(angle = 90),
+          legend.key.height = unit(0.60, "cm"),
+          legend.key.width = unit(0.15, "cm")
+    )
+```
+
+```{r Fig4f.save, fig.width = 2.17, fig.height = 1.74}
+fig4f
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(figures_dir, "F.Risk_gene_enrichment", .x), width = 2.17, height = 1.74)
+)
+```
+
