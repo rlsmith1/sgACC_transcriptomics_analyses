@@ -1,0 +1,45 @@
+[+] Loading matlab  2022a  on cn0021 
+
+                            < M A T L A B (R) >
+                  Copyright 1984-2022 The MathWorks, Inc.
+                  R2022a (9.12.0.1884302) 64-bit (glnxa64)
+                             February 16, 2022
+
+ 
+For online documentation, see https://www.mathworks.com/support
+For product information, visit www.mathworks.com.
+ 
+>> {Error using cd
+Unable to change current folder to
+'/data/smithral/sgacc_wgcna/RCCA_toolkit/cca_pls_toolkit_dev_final' (Name is
+nonexistent or not a folder).
+} 
+>> Associative effect 1
+
+Running permutation tests
+permutation id: 216 (out of 1000)... done!
+permutation id: 229 (out of 1000)... done!
+permutation id: 230 (out of 1000)... done!
+permutation id: 262 (out of 1000)... done!
+permutation id: 268 (out of 1000)... done!
+permutation id: 277 (out of 1000)... done!
+permutation id: 278 (out of 1000)... done!
+permutation id: 284 (out of 1000)... done!
+permutation id: 288 (out of 1000)... done!
+permutation id: 292 (out of 1000)... done!
+permutation id: 294 (out of 1000)... done!
+permutation id: 304 (out of 1000)... done!
+permutation id: 305 (out of 1000)... done!
+permutation id: 310 (out of 1000)... done!
+permutation id: 327 (out of 1000)... done!
+permutation id: 368 (out of 1000)... done!
+permutation id: 396 (out of 1000)... done!
+permutation id: 411 (out of 1000)... done!
+permutation id: 416 (out of 1000)... done!
+permutation id: 452 (out of 1000)... done!
+permutation id: 637 (out of 1000)... done!
+Permutation test done!
+
+No significant results found at this level!
+
+>> 

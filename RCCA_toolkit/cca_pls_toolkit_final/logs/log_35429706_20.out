@@ -1,0 +1,88 @@
+[+] Loading matlab  2022a  on cn4308 
+
+                            < M A T L A B (R) >
+                  Copyright 1984-2022 The MathWorks, Inc.
+                  R2022a (9.12.0.1884302) 64-bit (glnxa64)
+                             February 16, 2022
+
+ 
+For online documentation, see https://www.mathworks.com/support
+For product information, visit www.mathworks.com.
+ 
+>> {Error using cd
+Unable to change current folder to
+'/data/smithral/sgacc_wgcna/RCCA_toolkit/cca_pls_toolkit_dev_final' (Name is
+nonexistent or not a folder).
+} 
+>> [Warning: cfg structures are not the same, be very cautious!] 
+[> In savemat (line 48)
+In cfg_defaults (line 633)
+In grcca_analysis (line 64)] 
+cfg.env.fileend with different value
+cfg.env.seed.model with different value
+Associative effect 1
+
+Running bootstrapping
+bootstrap id: 3 (out of 1000)... done!
+bootstrap id: 21 (out of 1000)... done!
+bootstrap id: 25 (out of 1000)... done!
+bootstrap id: 34 (out of 1000)... done!
+bootstrap id: 39 (out of 1000)... done!
+bootstrap id: 79 (out of 1000)... done!
+bootstrap id: 267 (out of 1000)... done!
+Bootstrapping done!
+
+Generating permutations...
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+done!
+
+Running permutation tests
+permutation id: 1 (out of 1000)... done!
+permutation id: 2 (out of 1000)... done!
+permutation id: 3 (out of 1000)... done!
+permutation id: 4 (out of 1000)... done!
+permutation id: 6 (out of 1000)... done!
+permutation id: 7 (out of 1000)... done!
+permutation id: 8 (out of 1000)... done!
+permutation id: 10 (out of 1000)... done!
+permutation id: 11 (out of 1000)... done!
+permutation id: 13 (out of 1000)... done!
+permutation id: 17 (out of 1000)... done!
+permutation id: 18 (out of 1000)... done!
+permutation id: 20 (out of 1000)... done!
+permutation id: 25 (out of 1000)... done!
+permutation id: 31 (out of 1000)... done!
+permutation id: 33 (out of 1000)... done!
+permutation id: 34 (out of 1000)... done!
+permutation id: 35 (out of 1000)... done!
+permutation id: 39 (out of 1000)... done!
+permutation id: 42 (out of 1000)... done!
+permutation id: 51 (out of 1000)... done!
+permutation id: 55 (out of 1000)... done!
+permutation id: 58 (out of 1000)... done!
+permutation id: 79 (out of 1000)... done!
+permutation id: 97 (out of 1000)... done!
+Permutation test done!
+
+No significant results found at this level!
+
+>> 

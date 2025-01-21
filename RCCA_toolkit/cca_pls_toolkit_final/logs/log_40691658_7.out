@@ -1,0 +1,27 @@
+[+] Loading matlab  2022a  on cn4335 
+
+                            < M A T L A B (R) >
+                  Copyright 1984-2022 The MathWorks, Inc.
+                  R2022a (9.12.0.1884302) 64-bit (glnxa64)
+                             February 16, 2022
+
+ 
+For online documentation, see https://www.mathworks.com/support
+For product information, visit www.mathworks.com.
+ 
+>> {Error using cd
+Unable to change current folder to
+'/data/smithral/sgacc_wgcna/RCCA_toolkit/cca_pls_toolkit_dev_final' (Name is
+nonexistent or not a folder).
+} 
+>> [Warning: cfg structures are not the same, be very cautious!] 
+[> In savemat (line 48)
+In cfg_defaults (line 633)
+In grcca_analysis (line 70)] 
+cfg.env.fileend with different value
+cfg.env.seed.model with different value
+Associative effect 1
+
+No significant results found at this level!
+
+>> 

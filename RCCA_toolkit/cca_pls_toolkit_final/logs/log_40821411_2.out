@@ -1,0 +1,283 @@
+[+] Loading matlab  2022a  on cn3380 
+
+                            < M A T L A B (R) >
+                  Copyright 1984-2022 The MathWorks, Inc.
+                  R2022a (9.12.0.1884302) 64-bit (glnxa64)
+                             February 16, 2022
+
+ 
+For online documentation, see https://www.mathworks.com/support
+For product information, visit www.mathworks.com.
+ 
+>> {Error using cd
+Unable to change current folder to
+'/data/smithral/sgacc_wgcna/RCCA_toolkit/cca_pls_toolkit_dev_final' (Name is
+nonexistent or not a folder).
+} 
+>> [Warning: cfg structures are not the same, be very cautious!] 
+[> In savemat (line 48)
+In cfg_defaults (line 633)
+In grcca_analysis (line 70)] 
+cfg.env.fileend with different value
+cfg.env.seed.model with different value
+Associative effect 1
+
+Training main models... done!
+
+Running bootstrapping
+bootstrap id: 1 (out of 1000)... done!
+bootstrap id: 2 (out of 1000)... done!
+bootstrap id: 3 (out of 1000)... done!
+bootstrap id: 4 (out of 1000)... done!
+bootstrap id: 6 (out of 1000)... done!
+bootstrap id: 7 (out of 1000)... done!
+bootstrap id: 8 (out of 1000)... done!
+bootstrap id: 9 (out of 1000)... done!
+bootstrap id: 10 (out of 1000)... done!
+bootstrap id: 11 (out of 1000)... done!
+bootstrap id: 12 (out of 1000)... done!
+bootstrap id: 13 (out of 1000)... done!
+bootstrap id: 14 (out of 1000)... done!
+bootstrap id: 15 (out of 1000)... done!
+bootstrap id: 16 (out of 1000)... done!
+bootstrap id: 18 (out of 1000)... done!
+bootstrap id: 19 (out of 1000)... done!
+bootstrap id: 20 (out of 1000)... done!
+bootstrap id: 21 (out of 1000)... done!
+bootstrap id: 22 (out of 1000)... done!
+bootstrap id: 23 (out of 1000)... done!
+bootstrap id: 24 (out of 1000)... done!
+bootstrap id: 26 (out of 1000)... done!
+bootstrap id: 27 (out of 1000)... done!
+bootstrap id: 28 (out of 1000)... done!
+bootstrap id: 29 (out of 1000)... done!
+bootstrap id: 30 (out of 1000)... done!
+bootstrap id: 31 (out of 1000)... done!
+bootstrap id: 32 (out of 1000)... done!
+bootstrap id: 33 (out of 1000)... done!
+bootstrap id: 35 (out of 1000)... done!
+bootstrap id: 36 (out of 1000)... done!
+bootstrap id: 37 (out of 1000)... done!
+bootstrap id: 38 (out of 1000)... done!
+bootstrap id: 40 (out of 1000)... done!
+bootstrap id: 42 (out of 1000)... done!
+bootstrap id: 44 (out of 1000)... done!
+bootstrap id: 45 (out of 1000)... done!
+bootstrap id: 46 (out of 1000)... done!
+bootstrap id: 48 (out of 1000)... done!
+bootstrap id: 49 (out of 1000)... done!
+bootstrap id: 50 (out of 1000)... done!
+bootstrap id: 51 (out of 1000)... done!
+bootstrap id: 52 (out of 1000)... done!
+bootstrap id: 53 (out of 1000)... done!
+bootstrap id: 56 (out of 1000)... done!
+bootstrap id: 57 (out of 1000)... done!
+bootstrap id: 60 (out of 1000)... done!
+bootstrap id: 61 (out of 1000)... done!
+bootstrap id: 62 (out of 1000)... done!
+bootstrap id: 63 (out of 1000)... done!
+bootstrap id: 65 (out of 1000)... done!
+bootstrap id: 67 (out of 1000)... done!
+bootstrap id: 68 (out of 1000)... done!
+bootstrap id: 70 (out of 1000)... done!
+bootstrap id: 73 (out of 1000)... done!
+bootstrap id: 74 (out of 1000)... done!
+bootstrap id: 76 (out of 1000)... done!
+bootstrap id: 77 (out of 1000)... done!
+bootstrap id: 79 (out of 1000)... done!
+bootstrap id: 80 (out of 1000)... done!
+bootstrap id: 83 (out of 1000)... done!
+bootstrap id: 84 (out of 1000)... done!
+bootstrap id: 90 (out of 1000)... done!
+bootstrap id: 91 (out of 1000)... done!
+bootstrap id: 92 (out of 1000)... done!
+bootstrap id: 101 (out of 1000)... done!
+bootstrap id: 103 (out of 1000)... done!
+bootstrap id: 104 (out of 1000)... done!
+bootstrap id: 105 (out of 1000)... done!
+bootstrap id: 107 (out of 1000)... done!
+bootstrap id: 109 (out of 1000)... done!
+bootstrap id: 111 (out of 1000)... done!
+bootstrap id: 114 (out of 1000)... done!
+bootstrap id: 121 (out of 1000)... done!
+bootstrap id: 122 (out of 1000)... done!
+bootstrap id: 123 (out of 1000)... done!
+bootstrap id: 124 (out of 1000)... done!
+bootstrap id: 125 (out of 1000)... done!
+bootstrap id: 127 (out of 1000)... done!
+bootstrap id: 129 (out of 1000)... done!
+bootstrap id: 131 (out of 1000)... done!
+bootstrap id: 140 (out of 1000)... done!
+bootstrap id: 150 (out of 1000)... done!
+bootstrap id: 151 (out of 1000)... done!
+bootstrap id: 155 (out of 1000)... done!
+bootstrap id: 160 (out of 1000)... done!
+bootstrap id: 165 (out of 1000)... done!
+bootstrap id: 167 (out of 1000)... done!
+bootstrap id: 170 (out of 1000)... done!
+bootstrap id: 176 (out of 1000)... done!
+bootstrap id: 182 (out of 1000)... done!
+bootstrap id: 189 (out of 1000)... done!
+bootstrap id: 191 (out of 1000)... done!
+bootstrap id: 196 (out of 1000)... done!
+bootstrap id: 198 (out of 1000)... done!
+bootstrap id: 199 (out of 1000)... done!
+bootstrap id: 201 (out of 1000)... done!
+bootstrap id: 208 (out of 1000)... done!
+bootstrap id: 216 (out of 1000)... done!
+bootstrap id: 229 (out of 1000)... done!
+bootstrap id: 230 (out of 1000)... done!
+bootstrap id: 268 (out of 1000)... done!
+bootstrap id: 288 (out of 1000)... done!
+bootstrap id: 294 (out of 1000)... done!
+bootstrap id: 305 (out of 1000)... done!
+bootstrap id: 310 (out of 1000)... done!
+bootstrap id: 368 (out of 1000)... done!
+bootstrap id: 396 (out of 1000)... done!
+bootstrap id: 416 (out of 1000)... done!
+Bootstrapping done!
+
+Generating permutations...
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+done!
+
+Running permutation tests
+permutation id: 1 (out of 1000)... done!
+permutation id: 2 (out of 1000)... done!
+permutation id: 3 (out of 1000)... done!
+permutation id: 4 (out of 1000)... done!
+permutation id: 6 (out of 1000)... done!
+permutation id: 7 (out of 1000)... done!
+permutation id: 8 (out of 1000)... done!
+permutation id: 9 (out of 1000)... done!
+permutation id: 10 (out of 1000)... done!
+permutation id: 11 (out of 1000)... done!
+permutation id: 12 (out of 1000)... done!
+permutation id: 13 (out of 1000)... done!
+permutation id: 14 (out of 1000)... done!
+permutation id: 15 (out of 1000)... done!
+permutation id: 16 (out of 1000)... done!
+permutation id: 18 (out of 1000)... done!
+permutation id: 19 (out of 1000)... done!
+permutation id: 20 (out of 1000)... done!
+permutation id: 21 (out of 1000)... done!
+permutation id: 22 (out of 1000)... done!
+permutation id: 23 (out of 1000)... done!
+permutation id: 24 (out of 1000)... done!
+permutation id: 26 (out of 1000)... done!
+permutation id: 27 (out of 1000)... done!
+permutation id: 28 (out of 1000)... done!
+permutation id: 29 (out of 1000)... done!
+permutation id: 30 (out of 1000)... done!
+permutation id: 31 (out of 1000)... done!
+permutation id: 32 (out of 1000)... done!
+permutation id: 33 (out of 1000)... done!
+permutation id: 35 (out of 1000)... done!
+permutation id: 36 (out of 1000)... done!
+permutation id: 37 (out of 1000)... done!
+permutation id: 38 (out of 1000)... done!
+permutation id: 40 (out of 1000)... done!
+permutation id: 42 (out of 1000)... done!
+permutation id: 44 (out of 1000)... done!
+permutation id: 45 (out of 1000)... done!
+permutation id: 46 (out of 1000)... done!
+permutation id: 48 (out of 1000)... done!
+permutation id: 50 (out of 1000)... done!
+permutation id: 51 (out of 1000)... done!
+permutation id: 52 (out of 1000)... done!
+permutation id: 53 (out of 1000)... done!
+permutation id: 56 (out of 1000)... done!
+permutation id: 57 (out of 1000)... done!
+permutation id: 60 (out of 1000)... done!
+permutation id: 61 (out of 1000)... done!
+permutation id: 62 (out of 1000)... done!
+permutation id: 63 (out of 1000)... done!
+permutation id: 65 (out of 1000)... done!
+permutation id: 67 (out of 1000)... done!
+permutation id: 68 (out of 1000)... done!
+permutation id: 70 (out of 1000)... done!
+permutation id: 73 (out of 1000)... done!
+permutation id: 74 (out of 1000)... done!
+permutation id: 76 (out of 1000)... done!
+permutation id: 77 (out of 1000)... done!
+permutation id: 79 (out of 1000)... done!
+permutation id: 80 (out of 1000)... done!
+permutation id: 83 (out of 1000)... done!
+permutation id: 84 (out of 1000)... done!
+permutation id: 90 (out of 1000)... done!
+permutation id: 91 (out of 1000)... done!
+permutation id: 92 (out of 1000)... done!
+permutation id: 101 (out of 1000)... done!
+permutation id: 103 (out of 1000)... done!
+permutation id: 104 (out of 1000)... done!
+permutation id: 105 (out of 1000)... done!
+permutation id: 107 (out of 1000)... done!
+permutation id: 109 (out of 1000)... done!
+permutation id: 111 (out of 1000)... done!
+permutation id: 114 (out of 1000)... done!
+permutation id: 121 (out of 1000)... done!
+permutation id: 122 (out of 1000)... done!
+permutation id: 123 (out of 1000)... done!
+permutation id: 124 (out of 1000)... done!
+permutation id: 125 (out of 1000)... done!
+permutation id: 127 (out of 1000)... done!
+permutation id: 129 (out of 1000)... done!
+permutation id: 131 (out of 1000)... done!
+permutation id: 140 (out of 1000)... done!
+permutation id: 150 (out of 1000)... done!
+permutation id: 151 (out of 1000)... done!
+permutation id: 155 (out of 1000)... done!
+permutation id: 160 (out of 1000)... done!
+permutation id: 165 (out of 1000)... done!
+permutation id: 167 (out of 1000)... done!
+permutation id: 170 (out of 1000)... done!
+permutation id: 176 (out of 1000)... done!
+permutation id: 182 (out of 1000)... done!
+permutation id: 189 (out of 1000)... done!
+permutation id: 191 (out of 1000)... done!
+permutation id: 196 (out of 1000)... done!
+permutation id: 198 (out of 1000)... done!
+permutation id: 199 (out of 1000)... done!
+permutation id: 201 (out of 1000)... done!
+permutation id: 208 (out of 1000)... done!
+permutation id: 216 (out of 1000)... done!
+permutation id: 229 (out of 1000)... done!
+permutation id: 230 (out of 1000)... done!
+permutation id: 268 (out of 1000)... done!
+permutation id: 294 (out of 1000)... done!
+permutation id: 304 (out of 1000)... done!
+permutation id: 310 (out of 1000)... done!
+permutation id: 368 (out of 1000)... done!
+permutation id: 396 (out of 1000)... done!
+permutation id: 416 (out of 1000)... done!
+Permutation test done!
+
+No significant results found at this level!
+
+[Warning: File
+'/data/smithral/sgacc_wgcna/RCCA_toolkit/OVERALLsubs/08Mar2024_TRANSCRIPTS_qSVAgeSexRaceGC_CVq1_sft2_minSize35_cutHeight0.988_ControlBDMDDSCZ_8MCA_regressDim2_sigGRCCAz1_96/framework/grcca_permutation_VARx0.1_1_L2xNfeat_groupL2x0.1_withCmat_allEffects/perm/level1/allperm_3.mat'
+not found.] 
+[> In loadmat (line 55)
+In renamemat (line 33)
+In cleanup_files (line 68)
+In grcca_analysis (line 76)] 
+>> 

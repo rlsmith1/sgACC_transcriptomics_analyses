@@ -1,0 +1,32 @@
+[+] Loading matlab  2022a  on cn1847 
+
+                            < M A T L A B (R) >
+                  Copyright 1984-2022 The MathWorks, Inc.
+                  R2022a (9.12.0.1884302) 64-bit (glnxa64)
+                             February 16, 2022
+
+ 
+For online documentation, see https://www.mathworks.com/support
+For product information, visit www.mathworks.com.
+ 
+>> {Error using cd
+Unable to change current folder to
+'/data/smithral/sgacc_wgcna/RCCA_toolkit/cca_pls_toolkit_dev_final' (Name is
+nonexistent or not a folder).
+} 
+>> 
+type =
+
+    'GENES/'
+
+
+project_dir =
+
+    '08Mar2024_GENES_qSVAgeSexRaceGC_sft3_minSize40_cutHeight0.98_8MCA_regressBrainWeight_WITHGRAY'
+
+{Not enough input arguments.
+
+Error in grcca_analysis (line 33)
+cfg.machine.param.groupL2x = mu; % mu x (on a quasi-logarithmic scale, so 0.1 is set to almost 0 & 0.9999 is almost 1)
+} 
+>> Completed analysis for mu = 

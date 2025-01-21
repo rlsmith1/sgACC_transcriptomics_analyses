@@ -1,0 +1,364 @@
+[+] Loading matlab  2022a  on cn1693 
+
+                            < M A T L A B (R) >
+                  Copyright 1984-2022 The MathWorks, Inc.
+                  R2022a (9.12.0.1884302) 64-bit (glnxa64)
+                             February 16, 2022
+
+ 
+For online documentation, see https://www.mathworks.com/support
+For product information, visit www.mathworks.com.
+ 
+>> {Error using cd
+Unable to change current folder to
+'/data/smithral/sgacc_wgcna/RCCA_toolkit/cca_pls_toolkit_dev_final' (Name is
+nonexistent or not a folder).
+} 
+>> [Warning: cfg structures are not the same, be very cautious!] 
+[> In savemat (line 48)
+In cfg_defaults (line 633)
+In grcca_analysis (line 71)] 
+cfg.env.fileend with different value
+cfg.env.seed.model with different value
+Associative effect 1
+
+Training main models... done!
+
+Running bootstrapping
+bootstrap id: 1 (out of 1000)... done!
+bootstrap id: 2 (out of 1000)... done!
+bootstrap id: 3 (out of 1000)... done!
+bootstrap id: 4 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In grcca_analysis (line 74)] 
+ done!
+bootstrap id: 5 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In grcca_analysis (line 74)] 
+ done!
+bootstrap id: 6 (out of 1000)... done!
+bootstrap id: 7 (out of 1000)... done!
+bootstrap id: 8 (out of 1000)... done!
+bootstrap id: 9 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In grcca_analysis (line 74)] 
+ done!
+bootstrap id: 10 (out of 1000)... done!
+bootstrap id: 11 (out of 1000)... done!
+bootstrap id: 12 (out of 1000)... done!
+bootstrap id: 13 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In grcca_analysis (line 74)] 
+ done!
+bootstrap id: 14 (out of 1000)... done!
+bootstrap id: 15 (out of 1000)... done!
+bootstrap id: 17 (out of 1000)... done!
+bootstrap id: 18 (out of 1000)... done!
+bootstrap id: 19 (out of 1000)... done!
+bootstrap id: 20 (out of 1000)... done!
+bootstrap id: 21 (out of 1000)... done!
+bootstrap id: 22 (out of 1000)... done!
+bootstrap id: 23 (out of 1000)... done!
+bootstrap id: 25 (out of 1000)... done!
+bootstrap id: 26 (out of 1000)... done!
+bootstrap id: 28 (out of 1000)... done!
+bootstrap id: 29 (out of 1000)... done!
+bootstrap id: 31 (out of 1000)... done!
+bootstrap id: 32 (out of 1000)... done!
+bootstrap id: 34 (out of 1000)... done!
+bootstrap id: 35 (out of 1000)... done!
+bootstrap id: 36 (out of 1000)... done!
+bootstrap id: 37 (out of 1000)... done!
+bootstrap id: 38 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In grcca_analysis (line 74)] 
+ done!
+bootstrap id: 39 (out of 1000)... done!
+bootstrap id: 40 (out of 1000)... done!
+bootstrap id: 41 (out of 1000)... done!
+bootstrap id: 45 (out of 1000)... done!
+bootstrap id: 46 (out of 1000)... done!
+bootstrap id: 48 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In grcca_analysis (line 74)] 
+ done!
+bootstrap id: 49 (out of 1000)... done!
+bootstrap id: 50 (out of 1000)... done!
+bootstrap id: 51 (out of 1000)... done!
+bootstrap id: 52 (out of 1000)... done!
+bootstrap id: 53 (out of 1000)... done!
+bootstrap id: 55 (out of 1000)... done!
+bootstrap id: 56 (out of 1000)... done!
+bootstrap id: 58 (out of 1000)... done!
+bootstrap id: 61 (out of 1000)... done!
+bootstrap id: 64 (out of 1000)... done!
+bootstrap id: 65 (out of 1000)... done!
+bootstrap id: 66 (out of 1000)... done!
+bootstrap id: 68 (out of 1000)... done!
+bootstrap id: 69 (out of 1000)... done!
+bootstrap id: 75 (out of 1000)... done!
+bootstrap id: 76 (out of 1000)... done!
+bootstrap id: 77 (out of 1000)... done!
+bootstrap id: 84 (out of 1000)... done!
+bootstrap id: 86 (out of 1000)... done!
+bootstrap id: 89 (out of 1000)... done!
+bootstrap id: 92 (out of 1000)... done!
+bootstrap id: 94 (out of 1000)... done!
+bootstrap id: 95 (out of 1000)... done!
+bootstrap id: 98 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In grcca_analysis (line 74)] 
+ done!
+bootstrap id: 101 (out of 1000)... done!
+bootstrap id: 102 (out of 1000)... done!
+bootstrap id: 103 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In grcca_analysis (line 74)] 
+ done!
+bootstrap id: 104 (out of 1000)... done!
+bootstrap id: 111 (out of 1000)... done!
+bootstrap id: 114 (out of 1000)... done!
+bootstrap id: 115 (out of 1000)... done!
+bootstrap id: 118 (out of 1000)... done!
+bootstrap id: 121 (out of 1000)... done!
+bootstrap id: 127 (out of 1000)... done!
+bootstrap id: 131 (out of 1000)... done!
+bootstrap id: 132 (out of 1000)... done!
+bootstrap id: 136 (out of 1000)... done!
+bootstrap id: 143 (out of 1000)... done!
+bootstrap id: 151 (out of 1000)... done!
+bootstrap id: 156 (out of 1000)... done!
+bootstrap id: 157 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In grcca_analysis (line 74)] 
+ done!
+bootstrap id: 162 (out of 1000)... done!
+bootstrap id: 163 (out of 1000)... done!
+bootstrap id: 168 (out of 1000)... done!
+bootstrap id: 169 (out of 1000)... done!
+bootstrap id: 172 (out of 1000)... done!
+bootstrap id: 173 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In grcca_analysis (line 74)] 
+ done!
+bootstrap id: 176 (out of 1000)... done!
+bootstrap id: 178 (out of 1000)... done!
+bootstrap id: 182 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In grcca_analysis (line 74)] 
+ done!
+bootstrap id: 195 (out of 1000)... done!
+bootstrap id: 204 (out of 1000)... done!
+bootstrap id: 210 (out of 1000)... done!
+bootstrap id: 213 (out of 1000)... done!
+bootstrap id: 216 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In grcca_analysis (line 74)] 
+ done!
+bootstrap id: 217 (out of 1000)... done!
+bootstrap id: 228 (out of 1000)... done!
+bootstrap id: 238 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In grcca_analysis (line 74)] 
+ done!
+bootstrap id: 239 (out of 1000)... done!
+bootstrap id: 250 (out of 1000)... done!
+bootstrap id: 255 (out of 1000)... done!
+bootstrap id: 260 (out of 1000)... done!
+bootstrap id: 289 (out of 1000)... done!
+bootstrap id: 328 (out of 1000)... done!
+bootstrap id: 414 (out of 1000)... done!
+bootstrap id: 451 (out of 1000)... done!
+Bootstrapping done!
+
+Generating permutations...
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+done!
+
+Running permutation tests
+permutation id: 1 (out of 1000)... done!
+permutation id: 2 (out of 1000)... done!
+permutation id: 3 (out of 1000)... done!
+permutation id: 4 (out of 1000)... done!
+permutation id: 5 (out of 1000)... done!
+permutation id: 6 (out of 1000)... done!
+permutation id: 7 (out of 1000)... done!
+permutation id: 8 (out of 1000)... done!
+permutation id: 9 (out of 1000)... done!
+permutation id: 10 (out of 1000)... done!
+permutation id: 11 (out of 1000)... done!
+permutation id: 12 (out of 1000)... done!
+permutation id: 13 (out of 1000)... done!
+permutation id: 14 (out of 1000)... done!
+permutation id: 15 (out of 1000)... done!
+permutation id: 17 (out of 1000)... done!
+permutation id: 18 (out of 1000)... done!
+permutation id: 19 (out of 1000)... done!
+permutation id: 20 (out of 1000)... done!
+permutation id: 21 (out of 1000)... done!
+permutation id: 22 (out of 1000)... done!
+permutation id: 23 (out of 1000)... done!
+permutation id: 25 (out of 1000)... done!
+permutation id: 26 (out of 1000)... done!
+permutation id: 28 (out of 1000)... done!
+permutation id: 29 (out of 1000)... done!
+permutation id: 31 (out of 1000)... done!
+permutation id: 32 (out of 1000)... done!
+permutation id: 34 (out of 1000)... done!
+permutation id: 35 (out of 1000)... done!
+permutation id: 36 (out of 1000)... done!
+permutation id: 37 (out of 1000)... done!
+permutation id: 38 (out of 1000)... done!
+permutation id: 39 (out of 1000)... done!
+permutation id: 40 (out of 1000)... done!
+permutation id: 41 (out of 1000)... done!
+permutation id: 45 (out of 1000)... done!
+permutation id: 46 (out of 1000)... done!
+permutation id: 48 (out of 1000)... done!
+permutation id: 49 (out of 1000)... done!
+permutation id: 50 (out of 1000)... done!
+permutation id: 51 (out of 1000)... done!
+permutation id: 52 (out of 1000)... done!
+permutation id: 53 (out of 1000)... done!
+permutation id: 55 (out of 1000)... done!
+permutation id: 56 (out of 1000)... done!
+permutation id: 58 (out of 1000)... done!
+permutation id: 61 (out of 1000)... done!
+permutation id: 64 (out of 1000)... done!
+permutation id: 65 (out of 1000)... done!
+permutation id: 66 (out of 1000)... done!
+permutation id: 68 (out of 1000)... done!
+permutation id: 69 (out of 1000)... done!
+permutation id: 74 (out of 1000)... done!
+permutation id: 75 (out of 1000)... done!
+permutation id: 76 (out of 1000)... done!
+permutation id: 77 (out of 1000)... done!
+permutation id: 82 (out of 1000)... done!
+permutation id: 84 (out of 1000)... done!
+permutation id: 86 (out of 1000)... done!
+permutation id: 89 (out of 1000)... done!
+permutation id: 92 (out of 1000)... done!
+permutation id: 94 (out of 1000)... done!
+permutation id: 95 (out of 1000)... done!
+permutation id: 98 (out of 1000)... done!
+permutation id: 101 (out of 1000)... done!
+permutation id: 102 (out of 1000)... done!
+permutation id: 103 (out of 1000)... done!
+permutation id: 104 (out of 1000)... done!
+permutation id: 111 (out of 1000)... done!
+permutation id: 114 (out of 1000)... done!
+permutation id: 118 (out of 1000)... done!
+permutation id: 121 (out of 1000)... done!
+permutation id: 127 (out of 1000)... done!
+permutation id: 131 (out of 1000)... done!
+permutation id: 132 (out of 1000)... done!
+permutation id: 136 (out of 1000)... done!
+permutation id: 143 (out of 1000)... done!
+permutation id: 151 (out of 1000)... done!
+permutation id: 156 (out of 1000)... done!
+permutation id: 157 (out of 1000)... done!
+permutation id: 162 (out of 1000)... done!
+permutation id: 163 (out of 1000)... done!
+permutation id: 168 (out of 1000)... done!
+permutation id: 169 (out of 1000)... done!
+permutation id: 172 (out of 1000)... done!
+permutation id: 173 (out of 1000)... done!
+permutation id: 176 (out of 1000)... done!
+permutation id: 178 (out of 1000)... done!
+permutation id: 182 (out of 1000)... done!
+permutation id: 195 (out of 1000)... done!
+permutation id: 204 (out of 1000)... done!
+permutation id: 210 (out of 1000)... done!
+permutation id: 213 (out of 1000)... done!
+permutation id: 216 (out of 1000)... done!
+permutation id: 217 (out of 1000)... done!
+permutation id: 228 (out of 1000)... done!
+permutation id: 238 (out of 1000)... done!
+permutation id: 250 (out of 1000)... done!
+permutation id: 255 (out of 1000)... done!
+permutation id: 260 (out of 1000)... done!
+permutation id: 289 (out of 1000)... done!
+permutation id: 328 (out of 1000)... done!
+permutation id: 401 (out of 1000)... done!
+permutation id: 414 (out of 1000)... done!
+permutation id: 451 (out of 1000)... done!
+permutation id: 547 (out of 1000)... done!
+Permutation test done!
+
+Significant results found!
+
+[Warning: File
+'/data/smithral/sgacc_wgcna/RCCA_toolkit/OVERALLsubs/08Mar2024_TRANSCRIPTS_qSVAgeSexRaceGC_CVq1_sft2_minSize35_cutHeight0.988_ControlBDMDDSCZ_8MCA_regressDim2_broadRareSCZBDMDDASD_sigGRCCAfdr0_05/framework/grcca_permutation_VARx0.1_1_L2xGeneLevel_groupL2x0.1_withCmat_allEffects/perm/level1/allperm_8.mat'
+not found.] 
+[> In loadmat (line 55)
+In renamemat (line 33)
+In cleanup_files (line 68)
+In grcca_analysis (line 77)] 
+>> 

@@ -1,0 +1,41 @@
+[+] Loading matlab  2022a  on cn0010 
+
+                            < M A T L A B (R) >
+                  Copyright 1984-2022 The MathWorks, Inc.
+                  R2022a (9.12.0.1884302) 64-bit (glnxa64)
+                             February 16, 2022
+
+ 
+For online documentation, see https://www.mathworks.com/support
+For product information, visit www.mathworks.com.
+ 
+>> {Error using cd
+Unable to change current folder to
+'/data/smithral/sgacc_wgcna/RCCA_toolkit/cca_pls_toolkit_dev_final' (Name is
+nonexistent or not a folder).
+} 
+>> [Warning: cfg structures are not the same, be very cautious!] 
+[> In savemat (line 48)
+In cfg_defaults (line 633)
+In grcca_analysis (line 70)] 
+cfg.env.fileend with different value
+cfg.env.seed.model with different value
+Associative effect 1
+
+Significant results found!
+
+Associative effect 2
+
+Running bootstrapping
+Bootstrapping done!
+
+No significant results found at this level!
+
+[Warning: File
+'/data/smithral/sgacc_wgcna/RCCA_toolkit/OVERALLsubs/08Mar2024_TRANSCRIPTS_qSVAgeSexRaceGC_CVq1_sft2_minSize35_cutHeight0.988_ControlBDMDDSCZ_8MCA_regressBrainWeight_sigGRCCAfdr0_05/framework/grcca_permutation_VARx0.1_1_L2xNfeat_groupL2x0.1_noCmat_allEffects/perm/level1/allperm_3.mat'
+not found.] 
+[> In loadmat (line 55)
+In renamemat (line 33)
+In cleanup_files (line 68)
+In grcca_analysis (line 76)] 
+>> 

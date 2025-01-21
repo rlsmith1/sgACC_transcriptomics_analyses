@@ -1,0 +1,50 @@
+[+] Loading matlab  2022a  on cn0050 
+
+                            < M A T L A B (R) >
+                  Copyright 1984-2022 The MathWorks, Inc.
+                  R2022a (9.12.0.1884302) 64-bit (glnxa64)
+                             February 16, 2022
+
+ 
+For online documentation, see https://www.mathworks.com/support
+For product information, visit www.mathworks.com.
+ 
+>> {Error using cd
+Unable to change current folder to
+'/data/smithral/sgacc_wgcna/RCCA_toolkit/cca_pls_toolkit_dev_final' (Name is
+nonexistent or not a folder).
+} 
+>> [Warning: cfg structures are not the same, be very cautious!] 
+[> In savemat (line 48)
+In cfg_defaults (line 633)
+In grcca_analysis (line 64)] 
+cfg.env.fileend with different value
+cfg.env.seed.model with different value
+Associative effect 1
+
+Running permutation tests
+permutation id: 196 (out of 1000)... done!
+permutation id: 197 (out of 1000)... done!
+permutation id: 213 (out of 1000)... done!
+permutation id: 219 (out of 1000)... done!
+permutation id: 221 (out of 1000)... done!
+permutation id: 236 (out of 1000)... done!
+permutation id: 249 (out of 1000)... done!
+permutation id: 251 (out of 1000)... done!
+permutation id: 256 (out of 1000)... done!
+permutation id: 265 (out of 1000)... done!
+permutation id: 289 (out of 1000)... done!
+permutation id: 311 (out of 1000)... done!
+permutation id: 369 (out of 1000)... done!
+permutation id: 389 (out of 1000)... done!
+permutation id: 403 (out of 1000)... done!
+permutation id: 474 (out of 1000)... done!
+permutation id: 541 (out of 1000)... done!
+permutation id: 555 (out of 1000)... done!
+permutation id: 589 (out of 1000)... done!
+permutation id: 776 (out of 1000)... done!
+Permutation test done!
+
+No significant results found at this level!
+
+>> 

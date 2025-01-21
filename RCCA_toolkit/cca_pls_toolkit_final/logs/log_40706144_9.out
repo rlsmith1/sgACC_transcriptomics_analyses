@@ -1,0 +1,258 @@
+[+] Loading matlab  2022a  on cn0012 
+
+                            < M A T L A B (R) >
+                  Copyright 1984-2022 The MathWorks, Inc.
+                  R2022a (9.12.0.1884302) 64-bit (glnxa64)
+                             February 16, 2022
+
+ 
+For online documentation, see https://www.mathworks.com/support
+For product information, visit www.mathworks.com.
+ 
+>> {Error using cd
+Unable to change current folder to
+'/data/smithral/sgacc_wgcna/RCCA_toolkit/cca_pls_toolkit_dev_final' (Name is
+nonexistent or not a folder).
+} 
+>> [Warning: cfg structures are not the same, be very cautious!] 
+[> In savemat (line 48)
+In cfg_defaults (line 633)
+In grcca_analysis (line 70)] 
+cfg.env.fileend with different value
+cfg.env.seed.model with different value
+Associative effect 1
+
+Significant results found!
+
+Associative effect 2
+
+Running bootstrapping
+bootstrap id: 9 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In main (line 88)
+In grcca_analysis (line 73)] 
+ done!
+bootstrap id: 10 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In main (line 88)
+In grcca_analysis (line 73)] 
+ done!
+bootstrap id: 12 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In main (line 88)
+In grcca_analysis (line 73)] 
+ done!
+bootstrap id: 14 (out of 1000)... done!
+bootstrap id: 15 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In main (line 88)
+In grcca_analysis (line 73)] 
+ done!
+bootstrap id: 18 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In main (line 88)
+In grcca_analysis (line 73)] 
+ done!
+bootstrap id: 20 (out of 1000)... done!
+bootstrap id: 25 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In main (line 88)
+In grcca_analysis (line 73)] 
+ done!
+bootstrap id: 41 (out of 1000)... done!
+bootstrap id: 46 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In main (line 88)
+In grcca_analysis (line 73)] 
+ done!
+bootstrap id: 50 (out of 1000)... done!
+bootstrap id: 76 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In main (line 88)
+In grcca_analysis (line 73)] 
+ done!
+bootstrap id: 92 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In main (line 88)
+In grcca_analysis (line 73)] 
+ done!
+bootstrap id: 103 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In main (line 88)
+In grcca_analysis (line 73)] 
+ done!
+bootstrap id: 111 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In main (line 88)
+In grcca_analysis (line 73)] 
+ done!
+bootstrap id: 127 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In main (line 88)
+In grcca_analysis (line 73)] 
+ done!
+bootstrap id: 128 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In main (line 88)
+In grcca_analysis (line 73)] 
+ done!
+bootstrap id: 143 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In main (line 88)
+In grcca_analysis (line 73)] 
+ done!
+bootstrap id: 169 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In main (line 88)
+In grcca_analysis (line 73)] 
+ done!
+bootstrap id: 172 (out of 1000)... done!
+bootstrap id: 173 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In main (line 88)
+In grcca_analysis (line 73)] 
+ done!
+bootstrap id: 176 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In main (line 88)
+In grcca_analysis (line 73)] 
+ done!
+bootstrap id: 213 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In main (line 88)
+In grcca_analysis (line 73)] 
+ done!
+bootstrap id: 216 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In main (line 88)
+In grcca_analysis (line 73)] 
+ done!
+bootstrap id: 238 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In main (line 88)
+In grcca_analysis (line 73)] 
+ done!
+bootstrap id: 250 (out of 1000)... done!
+bootstrap id: 328 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In main (line 88)
+In grcca_analysis (line 73)] 
+ done!
+bootstrap id: 455 (out of 1000)...[Warning: Explained variance of data X is higher than explained variance to be
+set] 
+[> In get_featid (line 36)
+In load_data (line 289)
+In run_model (line 282)
+In main (line 65)
+In main (line 88)
+In grcca_analysis (line 73)] 
+ done!
+Bootstrapping done!
+[Warning: File
+'/data/smithral/sgacc_wgcna/RCCA_toolkit/OVERALLsubs/08Mar2024_TRANSCRIPTS_qSVAgeSexRaceGC_CVq1_sft2_minSize35_cutHeight0.988_ControlBDMDDSCZ_8MCA_regressBrainWeight_sigGRCCAfdr0_05/framework/grcca_permutation_VARx0.1_1_L2xNfeat_groupL2x0.1_noCmat_allEffects/perm/level1/allperm_3.mat'
+not found.] 
+[> In loadmat_struct (line 49)
+In stat_inference (line 41)
+In main (line 74)
+In main (line 88)
+In grcca_analysis (line 73)] 
+{Output argument "S" (and possibly others) not assigned a value in the execution
+with "loadmat_struct" function.
+
+Error in stat_inference (line 41)
+    S_perm = loadmat_struct(res, fullfile(res.dir.frwork, 'perm', 'level1', 'allperm.mat'));
+
+Error in main (line 74)
+res = stat_inference(res);
+
+Error in main (line 88)
+    main(res);
+
+Error in grcca_analysis (line 73)
+main(cfg);
+} 
+>> 

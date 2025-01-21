@@ -1,0 +1,85 @@
+[+] Loading matlab  2022a  on cn2439 
+
+                            < M A T L A B (R) >
+                  Copyright 1984-2022 The MathWorks, Inc.
+                  R2022a (9.12.0.1884302) 64-bit (glnxa64)
+                             February 16, 2022
+
+ 
+For online documentation, see https://www.mathworks.com/support
+For product information, visit www.mathworks.com.
+ 
+>> {Error using cd
+Unable to change current folder to
+'/data/smithral/sgacc_wgcna/RCCA_toolkit/cca_pls_toolkit_dev_final' (Name is
+nonexistent or not a folder).
+} 
+>> [Warning: cfg structures are not the same, be very cautious!] 
+[> In savemat (line 48)
+In cfg_defaults (line 633)
+In grcca_analysis (line 64)] 
+cfg.env.fileend with different value
+cfg.env.seed.model with different value
+Associative effect 1
+
+Running bootstrapping
+bootstrap id: 2 (out of 1000)... done!
+bootstrap id: 3 (out of 1000)... done!
+bootstrap id: 4 (out of 1000)... done!
+bootstrap id: 5 (out of 1000)... done!
+bootstrap id: 6 (out of 1000)... done!
+bootstrap id: 7 (out of 1000)... done!
+bootstrap id: 8 (out of 1000)... done!
+bootstrap id: 9 (out of 1000)... done!
+bootstrap id: 10 (out of 1000)... done!
+bootstrap id: 12 (out of 1000)... done!
+bootstrap id: 13 (out of 1000)... done!
+bootstrap id: 14 (out of 1000)... done!
+bootstrap id: 17 (out of 1000)... done!
+bootstrap id: 20 (out of 1000)... done!
+bootstrap id: 21 (out of 1000)... done!
+bootstrap id: 22 (out of 1000)... done!
+bootstrap id: 23 (out of 1000)... done!
+bootstrap id: 24 (out of 1000)... done!
+bootstrap id: 25 (out of 1000)... done!
+bootstrap id: 26 (out of 1000)... done!
+bootstrap id: 27 (out of 1000)... done!
+bootstrap id: 28 (out of 1000)... done!
+bootstrap id: 29 (out of 1000)... done!
+bootstrap id: 30 (out of 1000)... done!
+bootstrap id: 31 (out of 1000)... done!
+bootstrap id: 32 (out of 1000)... done!
+bootstrap id: 34 (out of 1000)... done!
+bootstrap id: 37 (out of 1000)... done!
+bootstrap id: 38 (out of 1000)... done!
+bootstrap id: 43 (out of 1000)... done!
+bootstrap id: 44 (out of 1000)... done!
+bootstrap id: 45 (out of 1000)... done!
+bootstrap id: 46 (out of 1000)... done!
+bootstrap id: 48 (out of 1000)... done!
+bootstrap id: 49 (out of 1000)... done!
+bootstrap id: 51 (out of 1000)... done!
+bootstrap id: 52 (out of 1000)... done!
+bootstrap id: 56 (out of 1000)... done!
+bootstrap id: 57 (out of 1000)... done!
+bootstrap id: 66 (out of 1000)... done!
+bootstrap id: 67 (out of 1000)... done!
+bootstrap id: 70 (out of 1000)... done!
+bootstrap id: 71 (out of 1000)... done!
+bootstrap id: 74 (out of 1000)... done!
+bootstrap id: 76 (out of 1000)... done!
+bootstrap id: 79 (out of 1000)... done!
+bootstrap id: 82 (out of 1000)... done!
+bootstrap id: 88 (out of 1000)... done!
+bootstrap id: 92 (out of 1000)... done!
+bootstrap id: 96 (out of 1000)... done!
+bootstrap id: 102 (out of 1000)... done!
+bootstrap id: 105 (out of 1000)... done!
+bootstrap id: 112 (out of 1000)... done!
+bootstrap id: 116 (out of 1000)... done!
+bootstrap id: 124 (out of 1000)... done!
+bootstrap id: 127 (out of 1000)... done!
+bootstrap id: 129 (out of 1000)... done!
+bootstrap id: 134 (out of 1000)... done!
+bootstrap id: 136 (out of 1000)... done!
+bootstrap id: 137 (out of 1000)...slurmstepd: error: *** JOB 35364268 ON cn2439 CANCELLED AT 2024-09-05T18:22:47 DUE TO TIME LIMIT ***

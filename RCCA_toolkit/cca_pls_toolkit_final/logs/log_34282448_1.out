@@ -1,0 +1,49 @@
+[+] Loading matlab  2022a  on cn4293 
+
+                            < M A T L A B (R) >
+                  Copyright 1984-2022 The MathWorks, Inc.
+                  R2022a (9.12.0.1884302) 64-bit (glnxa64)
+                             February 16, 2022
+
+ 
+For online documentation, see https://www.mathworks.com/support
+For product information, visit www.mathworks.com.
+ 
+>> {Error using cd
+Unable to change current folder to
+'/data/smithral/sgacc_wgcna/RCCA_toolkit/cca_pls_toolkit_dev_final' (Name is
+nonexistent or not a folder).
+} 
+>> 
+type =
+
+    'GENES/'
+
+
+project_dir =
+
+    '08Mar2024_GENES_qSVAgeSexRaceGC_sft3_minSize40_cutHeight0.98_8MCA_regressBrainWeight_WITHGRAY'
+
+[Warning: cfg structures are not the same, be very cautious!] 
+[> In savemat (line 48)
+In cfg_defaults (line 633)
+In grcca_analysis (line 64)] 
+cfg.frwork.split.nout with different value
+Associative effect 1
+
+No significant results found at this level!
+
+{Error using save_results>write_results
+To assign to or create a variable in a table, the number of rows must match the
+height of the table.
+
+Error in save_results (line 120)
+write_results(res, 'results_table', output{:});
+
+Error in main (line 77)
+res = save_results(res);
+
+Error in grcca_analysis (line 67)
+main(cfg);
+} 
+>> Completed analysis for mu = 0.01

@@ -1,0 +1,103 @@
+[+] Loading matlab  2022a  on cn1890 
+
+                            < M A T L A B (R) >
+                  Copyright 1984-2022 The MathWorks, Inc.
+                  R2022a (9.12.0.1884302) 64-bit (glnxa64)
+                             February 16, 2022
+
+ 
+For online documentation, see https://www.mathworks.com/support
+For product information, visit www.mathworks.com.
+ 
+>> {Error using cd
+Unable to change current folder to
+'/data/smithral/sgacc_wgcna/RCCA_toolkit/cca_pls_toolkit_dev_final' (Name is
+nonexistent or not a folder).
+} 
+>> 
+type =
+
+    'GENES/'
+
+
+project_dir =
+
+    '08Mar2024_GENES_qSVAgeSexRaceGC_sft3_minSize40_cutHeight0.98_8MCA_regressBrainWeight_WITHGRAY'
+
+[Warning: Non-positive between-group L2 regularization is set to 1e-5] 
+[> In cfg_defaults (line 525)
+In grcca_analysis (line 64)] 
+Associative effect 1
+
+Running permutation tests
+permutation id: 935 (out of 1000)... done!
+permutation id: 936 (out of 1000)... done!
+permutation id: 937 (out of 1000)... done!
+permutation id: 938 (out of 1000)... done!
+permutation id: 939 (out of 1000)... done!
+permutation id: 940 (out of 1000)... done!
+permutation id: 941 (out of 1000)... done!
+permutation id: 942 (out of 1000)... done!
+permutation id: 943 (out of 1000)... done!
+permutation id: 944 (out of 1000)... done!
+permutation id: 945 (out of 1000)... done!
+permutation id: 946 (out of 1000)... done!
+permutation id: 947 (out of 1000)... done!
+permutation id: 948 (out of 1000)... done!
+permutation id: 949 (out of 1000)... done!
+permutation id: 950 (out of 1000)... done!
+permutation id: 951 (out of 1000)... done!
+permutation id: 952 (out of 1000)... done!
+permutation id: 953 (out of 1000)... done!
+permutation id: 954 (out of 1000)... done!
+permutation id: 955 (out of 1000)... done!
+permutation id: 956 (out of 1000)... done!
+permutation id: 957 (out of 1000)... done!
+permutation id: 958 (out of 1000)... done!
+permutation id: 959 (out of 1000)... done!
+permutation id: 960 (out of 1000)... done!
+permutation id: 961 (out of 1000)... done!
+permutation id: 962 (out of 1000)... done!
+permutation id: 963 (out of 1000)... done!
+permutation id: 964 (out of 1000)... done!
+permutation id: 965 (out of 1000)... done!
+permutation id: 966 (out of 1000)... done!
+permutation id: 967 (out of 1000)... done!
+permutation id: 968 (out of 1000)... done!
+permutation id: 969 (out of 1000)... done!
+permutation id: 970 (out of 1000)... done!
+permutation id: 971 (out of 1000)... done!
+permutation id: 972 (out of 1000)... done!
+permutation id: 973 (out of 1000)... done!
+permutation id: 974 (out of 1000)... done!
+permutation id: 975 (out of 1000)... done!
+permutation id: 976 (out of 1000)... done!
+permutation id: 977 (out of 1000)... done!
+permutation id: 978 (out of 1000)... done!
+permutation id: 979 (out of 1000)... done!
+permutation id: 980 (out of 1000)... done!
+permutation id: 981 (out of 1000)... done!
+permutation id: 982 (out of 1000)... done!
+permutation id: 983 (out of 1000)... done!
+permutation id: 984 (out of 1000)... done!
+permutation id: 985 (out of 1000)... done!
+permutation id: 986 (out of 1000)... done!
+permutation id: 987 (out of 1000)... done!
+permutation id: 988 (out of 1000)... done!
+permutation id: 989 (out of 1000)... done!
+permutation id: 990 (out of 1000)... done!
+permutation id: 991 (out of 1000)... done!
+permutation id: 992 (out of 1000)... done!
+permutation id: 993 (out of 1000)... done!
+permutation id: 994 (out of 1000)... done!
+permutation id: 995 (out of 1000)... done!
+permutation id: 996 (out of 1000)... done!
+permutation id: 997 (out of 1000)... done!
+permutation id: 998 (out of 1000)... done!
+permutation id: 999 (out of 1000)... done!
+permutation id: 1000 (out of 1000)... done!
+Permutation test done!
+
+No significant results found at this level!
+
+>> Completed analysis for mu = 0

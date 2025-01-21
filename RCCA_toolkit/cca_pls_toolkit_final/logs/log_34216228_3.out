@@ -1,0 +1,60 @@
+[+] Loading matlab  2022a  on cn1177 
+
+                            < M A T L A B (R) >
+                  Copyright 1984-2022 The MathWorks, Inc.
+                  R2022a (9.12.0.1884302) 64-bit (glnxa64)
+                             February 16, 2022
+
+ 
+For online documentation, see https://www.mathworks.com/support
+For product information, visit www.mathworks.com.
+ 
+>> {Error using cd
+Unable to change current folder to
+'/data/smithral/sgacc_wgcna/RCCA_toolkit/cca_pls_toolkit_dev_final' (Name is
+nonexistent or not a folder).
+} 
+>> 
+type =
+
+    'GENES/'
+
+
+project_dir =
+
+    '08Mar2024_GENES_qSVAgeSexRaceGC_sft3_minSize40_cutHeight0.98_8MCA_regressBrainWeight_WITHGRAY'
+
+Associative effect 1
+
+Running permutation tests
+permutation id: 975 (out of 1000)... done!
+permutation id: 976 (out of 1000)... done!
+permutation id: 977 (out of 1000)... done!
+permutation id: 978 (out of 1000)... done!
+permutation id: 979 (out of 1000)... done!
+permutation id: 980 (out of 1000)... done!
+permutation id: 981 (out of 1000)... done!
+permutation id: 982 (out of 1000)... done!
+permutation id: 983 (out of 1000)... done!
+permutation id: 984 (out of 1000)... done!
+permutation id: 985 (out of 1000)... done!
+permutation id: 986 (out of 1000)... done!
+permutation id: 987 (out of 1000)... done!
+permutation id: 988 (out of 1000)... done!
+permutation id: 989 (out of 1000)... done!
+permutation id: 990 (out of 1000)... done!
+permutation id: 991 (out of 1000)... done!
+permutation id: 992 (out of 1000)... done!
+permutation id: 993 (out of 1000)... done!
+permutation id: 994 (out of 1000)... done!
+permutation id: 995 (out of 1000)... done!
+permutation id: 996 (out of 1000)... done!
+permutation id: 997 (out of 1000)... done!
+permutation id: 998 (out of 1000)... done!
+permutation id: 999 (out of 1000)... done!
+permutation id: 1000 (out of 1000)... done!
+Permutation test done!
+
+No significant results found at this level!
+
+>> Completed analysis for mu = 0.5

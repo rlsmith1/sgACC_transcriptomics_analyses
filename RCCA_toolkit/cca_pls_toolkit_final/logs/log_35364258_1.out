@@ -1,0 +1,108 @@
+[+] Loading matlab  2022a  on cn0955 
+
+                            < M A T L A B (R) >
+                  Copyright 1984-2022 The MathWorks, Inc.
+                  R2022a (9.12.0.1884302) 64-bit (glnxa64)
+                             February 16, 2022
+
+ 
+For online documentation, see https://www.mathworks.com/support
+For product information, visit www.mathworks.com.
+ 
+>> {Error using cd
+Unable to change current folder to
+'/data/smithral/sgacc_wgcna/RCCA_toolkit/cca_pls_toolkit_dev_final' (Name is
+nonexistent or not a folder).
+} 
+>> [Warning: cfg structures are not the same, be very cautious!] 
+[> In savemat (line 48)
+In cfg_defaults (line 633)
+In grcca_analysis (line 64)] 
+cfg.env.fileend with different value
+cfg.env.seed.model with different value
+Associative effect 1
+
+Running bootstrapping
+bootstrap id: 1 (out of 1000)... done!
+bootstrap id: 3 (out of 1000)... done!
+bootstrap id: 4 (out of 1000)... done!
+bootstrap id: 5 (out of 1000)... done!
+bootstrap id: 6 (out of 1000)... done!
+bootstrap id: 7 (out of 1000)... done!
+bootstrap id: 8 (out of 1000)... done!
+bootstrap id: 9 (out of 1000)... done!
+bootstrap id: 10 (out of 1000)... done!
+bootstrap id: 12 (out of 1000)... done!
+bootstrap id: 13 (out of 1000)... done!
+bootstrap id: 14 (out of 1000)... done!
+bootstrap id: 15 (out of 1000)... done!
+bootstrap id: 16 (out of 1000)... done!
+bootstrap id: 18 (out of 1000)... done!
+bootstrap id: 19 (out of 1000)... done!
+bootstrap id: 21 (out of 1000)... done!
+bootstrap id: 22 (out of 1000)... done!
+bootstrap id: 23 (out of 1000)... done!
+bootstrap id: 25 (out of 1000)... done!
+bootstrap id: 26 (out of 1000)... done!
+bootstrap id: 27 (out of 1000)... done!
+bootstrap id: 28 (out of 1000)... done!
+bootstrap id: 29 (out of 1000)... done!
+bootstrap id: 30 (out of 1000)... done!
+bootstrap id: 31 (out of 1000)... done!
+bootstrap id: 32 (out of 1000)... done!
+bootstrap id: 33 (out of 1000)... done!
+bootstrap id: 35 (out of 1000)... done!
+bootstrap id: 37 (out of 1000)... done!
+bootstrap id: 38 (out of 1000)... done!
+bootstrap id: 39 (out of 1000)... done!
+bootstrap id: 40 (out of 1000)... done!
+bootstrap id: 41 (out of 1000)... done!
+bootstrap id: 42 (out of 1000)... done!
+bootstrap id: 43 (out of 1000)... done!
+bootstrap id: 44 (out of 1000)... done!
+bootstrap id: 45 (out of 1000)... done!
+bootstrap id: 46 (out of 1000)... done!
+bootstrap id: 49 (out of 1000)... done!
+bootstrap id: 52 (out of 1000)... done!
+bootstrap id: 53 (out of 1000)... done!
+bootstrap id: 54 (out of 1000)... done!
+bootstrap id: 55 (out of 1000)... done!
+bootstrap id: 60 (out of 1000)... done!
+bootstrap id: 61 (out of 1000)... done!
+bootstrap id: 65 (out of 1000)... done!
+bootstrap id: 66 (out of 1000)... done!
+bootstrap id: 72 (out of 1000)... done!
+bootstrap id: 74 (out of 1000)... done!
+bootstrap id: 76 (out of 1000)... done!
+bootstrap id: 77 (out of 1000)... done!
+bootstrap id: 81 (out of 1000)... done!
+bootstrap id: 83 (out of 1000)... done!
+bootstrap id: 85 (out of 1000)... done!
+bootstrap id: 86 (out of 1000)... done!
+bootstrap id: 87 (out of 1000)... done!
+bootstrap id: 88 (out of 1000)... done!
+bootstrap id: 90 (out of 1000)... done!
+bootstrap id: 91 (out of 1000)... done!
+bootstrap id: 93 (out of 1000)... done!
+bootstrap id: 98 (out of 1000)... done!
+bootstrap id: 99 (out of 1000)... done!
+bootstrap id: 102 (out of 1000)... done!
+bootstrap id: 104 (out of 1000)... done!
+bootstrap id: 105 (out of 1000)... done!
+bootstrap id: 112 (out of 1000)... done!
+bootstrap id: 114 (out of 1000)... done!
+bootstrap id: 127 (out of 1000)... done!
+bootstrap id: 130 (out of 1000)... done!
+bootstrap id: 133 (out of 1000)... done!
+bootstrap id: 138 (out of 1000)... done!
+bootstrap id: 141 (out of 1000)... done!
+bootstrap id: 143 (out of 1000)... done!
+bootstrap id: 146 (out of 1000)... done!
+bootstrap id: 148 (out of 1000)... done!
+bootstrap id: 152 (out of 1000)... done!
+bootstrap id: 153 (out of 1000)... done!
+bootstrap id: 154 (out of 1000)... done!
+bootstrap id: 156 (out of 1000)... done!
+bootstrap id: 170 (out of 1000)... done!
+bootstrap id: 177 (out of 1000)... done!
+bootstrap id: 178 (out of 1000)...slurmstepd: error: *** JOB 35364265 ON cn0955 CANCELLED AT 2024-09-05T18:22:48 DUE TO TIME LIMIT ***

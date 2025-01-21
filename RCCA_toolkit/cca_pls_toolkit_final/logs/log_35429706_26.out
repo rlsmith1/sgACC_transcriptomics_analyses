@@ -1,0 +1,91 @@
+[+] Loading matlab  2022a  on cn4312 
+
+                            < M A T L A B (R) >
+                  Copyright 1984-2022 The MathWorks, Inc.
+                  R2022a (9.12.0.1884302) 64-bit (glnxa64)
+                             February 16, 2022
+
+ 
+For online documentation, see https://www.mathworks.com/support
+For product information, visit www.mathworks.com.
+ 
+>> {Error using cd
+Unable to change current folder to
+'/data/smithral/sgacc_wgcna/RCCA_toolkit/cca_pls_toolkit_dev_final' (Name is
+nonexistent or not a folder).
+} 
+>> [Warning: cfg structures are not the same, be very cautious!] 
+[> In savemat (line 48)
+In cfg_defaults (line 633)
+In grcca_analysis (line 64)] 
+cfg.env.fileend with different value
+cfg.env.seed.model with different value
+Associative effect 1
+
+Running bootstrapping
+bootstrap id: 3 (out of 1000)... done!
+bootstrap id: 5 (out of 1000)... done!
+bootstrap id: 8 (out of 1000)... done!
+bootstrap id: 17 (out of 1000)... done!
+bootstrap id: 18 (out of 1000)... done!
+bootstrap id: 26 (out of 1000)... done!
+bootstrap id: 42 (out of 1000)... done!
+bootstrap id: 48 (out of 1000)... done!
+bootstrap id: 93 (out of 1000)... done!
+bootstrap id: 135 (out of 1000)... done!
+bootstrap id: 242 (out of 1000)... done!
+bootstrap id: 305 (out of 1000)... done!
+Bootstrapping done!
+
+Generating permutations...
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+done!
+
+Running permutation tests
+permutation id: 1 (out of 1000)... done!
+permutation id: 2 (out of 1000)... done!
+permutation id: 3 (out of 1000)... done!
+permutation id: 4 (out of 1000)... done!
+permutation id: 5 (out of 1000)... done!
+permutation id: 6 (out of 1000)... done!
+permutation id: 7 (out of 1000)... done!
+permutation id: 8 (out of 1000)... done!
+permutation id: 9 (out of 1000)... done!
+permutation id: 11 (out of 1000)... done!
+permutation id: 13 (out of 1000)... done!
+permutation id: 14 (out of 1000)... done!
+permutation id: 15 (out of 1000)... done!
+permutation id: 16 (out of 1000)... done!
+permutation id: 17 (out of 1000)... done!
+permutation id: 18 (out of 1000)... done!
+permutation id: 19 (out of 1000)... done!
+permutation id: 20 (out of 1000)... done!
+permutation id: 26 (out of 1000)... done!
+permutation id: 27 (out of 1000)... done!
+permutation id: 29 (out of 1000)... done!
+permutation id: 33 (out of 1000)... done!
+permutation id: 40 (out of 1000)... done!
+permutation id: 43 (out of 1000)... done!
+permutation id: 44 (out of 1000)... done!
+permutation id: 48 (out of 1000)... done!
+permutation id: 52 (out of 1000)... done!
+permutation id: 57 (out of 1000)... done!
+permutation id: 60 (out of 1000)... done!
+permutation id: 64 (out of 1000)... done!
+permutation id: 70 (out of 1000)... done!
+permutation id: 80 (out of 1000)... done!
+permutation id: 92 (out of 1000)... done!
+permutation id: 120 (out of 1000)... done!
+permutation id: 125 (out of 1000)... done!
+permutation id: 242 (out of 1000)... done!
+permutation id: 287 (out of 1000)... done!
+Permutation test done!
+
+No significant results found at this level!
+
+>> 

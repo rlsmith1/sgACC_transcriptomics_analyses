@@ -1,0 +1,89 @@
+[+] Loading matlab  2022a  on cn2466 
+
+                            < M A T L A B (R) >
+                  Copyright 1984-2022 The MathWorks, Inc.
+                  R2022a (9.12.0.1884302) 64-bit (glnxa64)
+                             February 16, 2022
+
+ 
+For online documentation, see https://www.mathworks.com/support
+For product information, visit www.mathworks.com.
+ 
+>> {Error using cd
+Unable to change current folder to
+'/data/smithral/sgacc_wgcna/RCCA_toolkit/cca_pls_toolkit_dev_final' (Name is
+nonexistent or not a folder).
+} 
+>> Associative effect 1
+
+Running bootstrapping
+bootstrap id: 155 (out of 1000)... done!
+bootstrap id: 156 (out of 1000)... done!
+bootstrap id: 157 (out of 1000)... done!
+bootstrap id: 158 (out of 1000)... done!
+bootstrap id: 159 (out of 1000)... done!
+bootstrap id: 160 (out of 1000)... done!
+bootstrap id: 161 (out of 1000)... done!
+bootstrap id: 163 (out of 1000)... done!
+bootstrap id: 164 (out of 1000)... done!
+bootstrap id: 165 (out of 1000)... done!
+bootstrap id: 166 (out of 1000)... done!
+bootstrap id: 167 (out of 1000)... done!
+bootstrap id: 168 (out of 1000)... done!
+bootstrap id: 169 (out of 1000)... done!
+bootstrap id: 170 (out of 1000)... done!
+bootstrap id: 171 (out of 1000)... done!
+bootstrap id: 172 (out of 1000)... done!
+bootstrap id: 173 (out of 1000)... done!
+bootstrap id: 174 (out of 1000)... done!
+bootstrap id: 176 (out of 1000)... done!
+bootstrap id: 177 (out of 1000)... done!
+bootstrap id: 182 (out of 1000)... done!
+bootstrap id: 183 (out of 1000)... done!
+bootstrap id: 185 (out of 1000)... done!
+bootstrap id: 186 (out of 1000)... done!
+bootstrap id: 187 (out of 1000)... done!
+bootstrap id: 189 (out of 1000)... done!
+bootstrap id: 191 (out of 1000)... done!
+bootstrap id: 193 (out of 1000)... done!
+bootstrap id: 196 (out of 1000)... done!
+bootstrap id: 197 (out of 1000)... done!
+bootstrap id: 198 (out of 1000)... done!
+bootstrap id: 199 (out of 1000)... done!
+bootstrap id: 201 (out of 1000)... done!
+bootstrap id: 203 (out of 1000)... done!
+bootstrap id: 204 (out of 1000)... done!
+bootstrap id: 206 (out of 1000)... done!
+bootstrap id: 208 (out of 1000)... done!
+bootstrap id: 210 (out of 1000)... done!
+bootstrap id: 211 (out of 1000)... done!
+bootstrap id: 213 (out of 1000)... done!
+bootstrap id: 215 (out of 1000)... done!
+bootstrap id: 216 (out of 1000)... done!
+bootstrap id: 217 (out of 1000)... done!
+bootstrap id: 219 (out of 1000)... done!
+bootstrap id: 220 (out of 1000)... done!
+bootstrap id: 222 (out of 1000)... done!
+bootstrap id: 223 (out of 1000)... done!
+bootstrap id: 225 (out of 1000)... done!
+bootstrap id: 229 (out of 1000)... done!
+bootstrap id: 230 (out of 1000)... done!
+bootstrap id: 231 (out of 1000)... done!
+bootstrap id: 234 (out of 1000)... done!
+bootstrap id: 235 (out of 1000)... done!
+bootstrap id: 240 (out of 1000)... done!
+bootstrap id: 253 (out of 1000)... done!
+bootstrap id: 257 (out of 1000)... done!
+bootstrap id: 259 (out of 1000)... done!
+bootstrap id: 260 (out of 1000)... done!
+bootstrap id: 261 (out of 1000)... done!
+bootstrap id: 262 (out of 1000)... done!
+bootstrap id: 264 (out of 1000)... done!
+bootstrap id: 268 (out of 1000)... done!
+bootstrap id: 269 (out of 1000)... done!
+bootstrap id: 277 (out of 1000)... done!
+bootstrap id: 278 (out of 1000)... done!
+bootstrap id: 284 (out of 1000)... done!
+bootstrap id: 287 (out of 1000)... done!
+bootstrap id: 288 (out of 1000)... done!
+bootstrap id: 291 (out of 1000)...slurmstepd: error: *** JOB 35364266 ON cn2466 CANCELLED AT 2024-09-05T18:22:47 DUE TO TIME LIMIT ***

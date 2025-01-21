@@ -1,0 +1,77 @@
+[+] Loading matlab  2022a  on cn4332 
+
+                            < M A T L A B (R) >
+                  Copyright 1984-2022 The MathWorks, Inc.
+                  R2022a (9.12.0.1884302) 64-bit (glnxa64)
+                             February 16, 2022
+
+ 
+For online documentation, see https://www.mathworks.com/support
+For product information, visit www.mathworks.com.
+ 
+>> {Error using cd
+Unable to change current folder to
+'/data/smithral/sgacc_wgcna/RCCA_toolkit/cca_pls_toolkit_dev_final' (Name is
+nonexistent or not a folder).
+} 
+>> [Warning: cfg structures are not the same, be very cautious!] 
+[> In savemat (line 48)
+In cfg_defaults (line 633)
+In grcca_analysis (line 64)] 
+cfg.env.fileend with different value
+cfg.env.seed.model with different value
+Associative effect 1
+
+Running bootstrapping
+bootstrap id: 7 (out of 1000)... done!
+bootstrap id: 17 (out of 1000)... done!
+bootstrap id: 22 (out of 1000)... done!
+bootstrap id: 30 (out of 1000)... done!
+bootstrap id: 45 (out of 1000)... done!
+bootstrap id: 49 (out of 1000)... done!
+bootstrap id: 95 (out of 1000)... done!
+Bootstrapping done!
+
+Running permutation tests
+permutation id: 1 (out of 1000)... done!
+permutation id: 2 (out of 1000)... done!
+permutation id: 3 (out of 1000)... done!
+permutation id: 4 (out of 1000)... done!
+permutation id: 7 (out of 1000)... done!
+permutation id: 8 (out of 1000)... done!
+permutation id: 9 (out of 1000)... done!
+permutation id: 10 (out of 1000)... done!
+permutation id: 11 (out of 1000)... done!
+permutation id: 12 (out of 1000)... done!
+permutation id: 13 (out of 1000)... done!
+permutation id: 18 (out of 1000)... done!
+permutation id: 19 (out of 1000)... done!
+permutation id: 20 (out of 1000)... done!
+permutation id: 23 (out of 1000)... done!
+permutation id: 29 (out of 1000)... done!
+permutation id: 34 (out of 1000)... done!
+permutation id: 35 (out of 1000)... done!
+permutation id: 40 (out of 1000)... done!
+permutation id: 43 (out of 1000)... done!
+permutation id: 75 (out of 1000)... done!
+permutation id: 78 (out of 1000)... done!
+Permutation test done!
+
+No significant results found at this level!
+
+{Error using movefile
+Destination
+/gpfs/gsfs11/users/smithral/sgacc_wgcna/RCCA_toolkit/OVERALLsubs/08Mar2024_TRANSCRIPTS_qSVAgeSexRaceGC_CVq1_sft2_minSize35_cutHeight0.988_8MCA_regressDim2_WITHGray/framework/grcca_permutation_VARx0.1_1_L2xNfeat_groupL2x0.1_withCmat_allEffects/boot/level1/allboot_1.mat
+is not a folder.
+When moving a source folder, the destination must also be a folder.
+
+Error in renamemat (line 40)
+        movefile(old_file, new_file);
+
+Error in cleanup_files (line 74)
+        renamemat(cfg, fullfile(res.dir.boot, 'allboot.mat'));
+
+Error in grcca_analysis (line 70)
+cleanup_files(cfg);
+} 
+>> 

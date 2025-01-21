@@ -1,0 +1,67 @@
+[+] Loading matlab  2022a  on cn0022 
+
+                            < M A T L A B (R) >
+                  Copyright 1984-2022 The MathWorks, Inc.
+                  R2022a (9.12.0.1884302) 64-bit (glnxa64)
+                             February 16, 2022
+
+ 
+For online documentation, see https://www.mathworks.com/support
+For product information, visit www.mathworks.com.
+ 
+>> {Error using cd
+Unable to change current folder to
+'/data/smithral/sgacc_wgcna/RCCA_toolkit/cca_pls_toolkit_dev_final' (Name is
+nonexistent or not a folder).
+} 
+>> [Warning: cfg structures are not the same, be very cautious!] 
+[> In savemat (line 48)
+In cfg_defaults (line 633)
+In grcca_analysis (line 64)] 
+cfg.env.fileend with different value
+cfg.env.seed.model with different value
+Associative effect 1
+
+Running permutation tests
+permutation id: 141 (out of 1000)... done!
+permutation id: 163 (out of 1000)... done!
+permutation id: 173 (out of 1000)... done!
+permutation id: 179 (out of 1000)... done!
+permutation id: 185 (out of 1000)... done!
+permutation id: 192 (out of 1000)... done!
+permutation id: 203 (out of 1000)... done!
+permutation id: 207 (out of 1000)... done!
+permutation id: 210 (out of 1000)... done!
+permutation id: 216 (out of 1000)... done!
+permutation id: 218 (out of 1000)... done!
+permutation id: 243 (out of 1000)... done!
+permutation id: 249 (out of 1000)... done!
+permutation id: 261 (out of 1000)... done!
+permutation id: 314 (out of 1000)... done!
+permutation id: 316 (out of 1000)... done!
+permutation id: 339 (out of 1000)... done!
+permutation id: 360 (out of 1000)... done!
+permutation id: 363 (out of 1000)... done!
+permutation id: 508 (out of 1000)... done!
+permutation id: 683 (out of 1000)... done!
+Permutation test done!
+[Warning: File
+'/data/smithral/sgacc_wgcna/RCCA_toolkit/OVERALLsubs/08Mar2024_TRANSCRIPTS_qSVAgeSexRaceGC_CVq1_sft2_minSize35_cutHeight0.988_8MCA_regressDim2_WITHGray/framework/grcca_permutation_VARx0.1_1_L2xNfeat_groupL2x0.1_noCmat_allEffects/perm/level1/allperm_6.mat'
+not found.] 
+[> In loadmat_struct (line 49)
+In stat_inference (line 41)
+In main (line 74)
+In grcca_analysis (line 67)] 
+{Output argument "S" (and possibly others) not assigned a value in the execution
+with "loadmat_struct" function.
+
+Error in stat_inference (line 41)
+    S_perm = loadmat_struct(res, fullfile(res.dir.frwork, 'perm', 'level1', 'allperm.mat'));
+
+Error in main (line 74)
+res = stat_inference(res);
+
+Error in grcca_analysis (line 67)
+main(cfg);
+} 
+>> 

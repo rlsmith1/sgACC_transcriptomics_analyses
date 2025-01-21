@@ -1,0 +1,401 @@
+[+] Loading matlab  2022a  on cn3101 
+
+                            < M A T L A B (R) >
+                  Copyright 1984-2022 The MathWorks, Inc.
+                  R2022a (9.12.0.1884302) 64-bit (glnxa64)
+                             February 16, 2022
+
+ 
+For online documentation, see https://www.mathworks.com/support
+For product information, visit www.mathworks.com.
+ 
+>> {Error using cd
+Unable to change current folder to
+'/data/smithral/sgacc_wgcna/RCCA_toolkit/cca_pls_toolkit_dev_final' (Name is
+nonexistent or not a folder).
+} 
+>> [Warning: cfg structures are not the same, be very cautious!] 
+[> In savemat (line 48)
+In cfg_defaults (line 633)
+In grcca_analysis (line 70)] 
+cfg.env.fileend with different value
+cfg.env.seed.model with different value
+Associative effect 1
+
+Training main models...[Warning: Directory already exists.] 
+[> In getfname_dirload (line 33)
+In load_data (line 205)
+In run_model (line 186)
+In main (line 61)
+In grcca_analysis (line 73)] 
+ done!
+
+Running bootstrapping
+bootstrap id: 1 (out of 1000)... done!
+bootstrap id: 2 (out of 1000)... done!
+bootstrap id: 3 (out of 1000)... done!
+bootstrap id: 4 (out of 1000)... done!
+bootstrap id: 5 (out of 1000)... done!
+bootstrap id: 6 (out of 1000)... done!
+bootstrap id: 7 (out of 1000)... done!
+bootstrap id: 8 (out of 1000)... done!
+bootstrap id: 9 (out of 1000)... done!
+bootstrap id: 10 (out of 1000)... done!
+bootstrap id: 11 (out of 1000)... done!
+bootstrap id: 13 (out of 1000)... done!
+bootstrap id: 14 (out of 1000)... done!
+bootstrap id: 16 (out of 1000)... done!
+bootstrap id: 17 (out of 1000)... done!
+bootstrap id: 18 (out of 1000)... done!
+bootstrap id: 19 (out of 1000)... done!
+bootstrap id: 20 (out of 1000)... done!
+bootstrap id: 21 (out of 1000)... done!
+bootstrap id: 22 (out of 1000)... done!
+bootstrap id: 24 (out of 1000)... done!
+bootstrap id: 25 (out of 1000)... done!
+bootstrap id: 26 (out of 1000)... done!
+bootstrap id: 27 (out of 1000)... done!
+bootstrap id: 29 (out of 1000)... done!
+bootstrap id: 31 (out of 1000)... done!
+bootstrap id: 33 (out of 1000)... done!
+bootstrap id: 35 (out of 1000)... done!
+bootstrap id: 36 (out of 1000)... done!
+bootstrap id: 37 (out of 1000)... done!
+bootstrap id: 38 (out of 1000)... done!
+bootstrap id: 40 (out of 1000)... done!
+bootstrap id: 41 (out of 1000)... done!
+bootstrap id: 42 (out of 1000)... done!
+bootstrap id: 43 (out of 1000)... done!
+bootstrap id: 44 (out of 1000)... done!
+bootstrap id: 45 (out of 1000)... done!
+bootstrap id: 46 (out of 1000)... done!
+bootstrap id: 47 (out of 1000)... done!
+bootstrap id: 48 (out of 1000)... done!
+bootstrap id: 49 (out of 1000)... done!
+bootstrap id: 50 (out of 1000)... done!
+bootstrap id: 51 (out of 1000)... done!
+bootstrap id: 54 (out of 1000)... done!
+bootstrap id: 55 (out of 1000)... done!
+bootstrap id: 57 (out of 1000)... done!
+bootstrap id: 60 (out of 1000)... done!
+bootstrap id: 61 (out of 1000)... done!
+bootstrap id: 62 (out of 1000)... done!
+bootstrap id: 67 (out of 1000)... done!
+bootstrap id: 68 (out of 1000)... done!
+bootstrap id: 69 (out of 1000)... done!
+bootstrap id: 71 (out of 1000)... done!
+bootstrap id: 75 (out of 1000)... done!
+bootstrap id: 76 (out of 1000)... done!
+bootstrap id: 78 (out of 1000)... done!
+bootstrap id: 80 (out of 1000)... done!
+bootstrap id: 82 (out of 1000)... done!
+bootstrap id: 83 (out of 1000)... done!
+bootstrap id: 84 (out of 1000)... done!
+bootstrap id: 86 (out of 1000)... done!
+bootstrap id: 89 (out of 1000)... done!
+bootstrap id: 91 (out of 1000)... done!
+bootstrap id: 92 (out of 1000)... done!
+bootstrap id: 93 (out of 1000)... done!
+bootstrap id: 94 (out of 1000)... done!
+bootstrap id: 96 (out of 1000)... done!
+bootstrap id: 107 (out of 1000)... done!
+bootstrap id: 109 (out of 1000)... done!
+bootstrap id: 113 (out of 1000)... done!
+bootstrap id: 114 (out of 1000)... done!
+bootstrap id: 116 (out of 1000)... done!
+bootstrap id: 120 (out of 1000)... done!
+bootstrap id: 122 (out of 1000)... done!
+bootstrap id: 125 (out of 1000)... done!
+bootstrap id: 127 (out of 1000)... done!
+bootstrap id: 130 (out of 1000)... done!
+bootstrap id: 134 (out of 1000)... done!
+bootstrap id: 135 (out of 1000)... done!
+bootstrap id: 137 (out of 1000)... done!
+bootstrap id: 139 (out of 1000)... done!
+bootstrap id: 145 (out of 1000)... done!
+bootstrap id: 149 (out of 1000)... done!
+bootstrap id: 152 (out of 1000)... done!
+bootstrap id: 154 (out of 1000)... done!
+bootstrap id: 155 (out of 1000)... done!
+bootstrap id: 156 (out of 1000)... done!
+bootstrap id: 165 (out of 1000)... done!
+bootstrap id: 171 (out of 1000)... done!
+bootstrap id: 173 (out of 1000)... done!
+bootstrap id: 174 (out of 1000)... done!
+bootstrap id: 175 (out of 1000)... done!
+bootstrap id: 178 (out of 1000)... done!
+bootstrap id: 180 (out of 1000)... done!
+bootstrap id: 183 (out of 1000)... done!
+bootstrap id: 188 (out of 1000)... done!
+bootstrap id: 213 (out of 1000)... done!
+bootstrap id: 214 (out of 1000)... done!
+bootstrap id: 215 (out of 1000)... done!
+bootstrap id: 217 (out of 1000)... done!
+bootstrap id: 224 (out of 1000)... done!
+bootstrap id: 232 (out of 1000)... done!
+bootstrap id: 246 (out of 1000)... done!
+bootstrap id: 252 (out of 1000)... done!
+bootstrap id: 264 (out of 1000)... done!
+bootstrap id: 299 (out of 1000)... done!
+bootstrap id: 312 (out of 1000)... done!
+bootstrap id: 322 (out of 1000)... done!
+bootstrap id: 335 (out of 1000)... done!
+bootstrap id: 361 (out of 1000)... done!
+Bootstrapping done!
+
+Generating permutations...
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+Number of possible permutations is exp(784.295).
+Generating 1001 shufflings (permutations only).
+done!
+
+Running permutation tests
+permutation id: 1 (out of 1000)... done!
+permutation id: 2 (out of 1000)... done!
+permutation id: 3 (out of 1000)... done!
+permutation id: 4 (out of 1000)... done!
+permutation id: 5 (out of 1000)... done!
+permutation id: 6 (out of 1000)... done!
+permutation id: 7 (out of 1000)... done!
+permutation id: 8 (out of 1000)... done!
+permutation id: 9 (out of 1000)... done!
+permutation id: 10 (out of 1000)... done!
+permutation id: 11 (out of 1000)... done!
+permutation id: 13 (out of 1000)... done!
+permutation id: 14 (out of 1000)... done!
+permutation id: 16 (out of 1000)... done!
+permutation id: 17 (out of 1000)... done!
+permutation id: 18 (out of 1000)... done!
+permutation id: 19 (out of 1000)... done!
+permutation id: 20 (out of 1000)... done!
+permutation id: 21 (out of 1000)... done!
+permutation id: 22 (out of 1000)... done!
+permutation id: 24 (out of 1000)... done!
+permutation id: 25 (out of 1000)... done!
+permutation id: 26 (out of 1000)... done!
+permutation id: 27 (out of 1000)... done!
+permutation id: 29 (out of 1000)... done!
+permutation id: 30 (out of 1000)... done!
+permutation id: 31 (out of 1000)... done!
+permutation id: 33 (out of 1000)... done!
+permutation id: 36 (out of 1000)... done!
+permutation id: 37 (out of 1000)... done!
+permutation id: 38 (out of 1000)... done!
+permutation id: 40 (out of 1000)... done!
+permutation id: 41 (out of 1000)... done!
+permutation id: 42 (out of 1000)... done!
+permutation id: 43 (out of 1000)... done!
+permutation id: 44 (out of 1000)... done!
+permutation id: 45 (out of 1000)... done!
+permutation id: 46 (out of 1000)... done!
+permutation id: 47 (out of 1000)... done!
+permutation id: 48 (out of 1000)... done!
+permutation id: 49 (out of 1000)... done!
+permutation id: 50 (out of 1000)... done!
+permutation id: 51 (out of 1000)... done!
+permutation id: 54 (out of 1000)... done!
+permutation id: 55 (out of 1000)... done!
+permutation id: 57 (out of 1000)... done!
+permutation id: 60 (out of 1000)... done!
+permutation id: 61 (out of 1000)... done!
+permutation id: 62 (out of 1000)... done!
+permutation id: 67 (out of 1000)... done!
+permutation id: 68 (out of 1000)... done!
+permutation id: 69 (out of 1000)... done!
+permutation id: 71 (out of 1000)... done!
+permutation id: 75 (out of 1000)... done!
+permutation id: 76 (out of 1000)... done!
+permutation id: 78 (out of 1000)... done!
+permutation id: 80 (out of 1000)... done!
+permutation id: 82 (out of 1000)... done!
+permutation id: 83 (out of 1000)... done!
+permutation id: 84 (out of 1000)... done!
+permutation id: 86 (out of 1000)... done!
+permutation id: 89 (out of 1000)... done!
+permutation id: 91 (out of 1000)... done!
+permutation id: 92 (out of 1000)... done!
+permutation id: 93 (out of 1000)... done!
+permutation id: 94 (out of 1000)... done!
+permutation id: 96 (out of 1000)... done!
+permutation id: 107 (out of 1000)... done!
+permutation id: 113 (out of 1000)... done!
+permutation id: 114 (out of 1000)... done!
+permutation id: 116 (out of 1000)... done!
+permutation id: 120 (out of 1000)... done!
+permutation id: 122 (out of 1000)... done!
+permutation id: 125 (out of 1000)... done!
+permutation id: 127 (out of 1000)... done!
+permutation id: 130 (out of 1000)... done!
+permutation id: 133 (out of 1000)... done!
+permutation id: 134 (out of 1000)... done!
+permutation id: 135 (out of 1000)... done!
+permutation id: 137 (out of 1000)... done!
+permutation id: 139 (out of 1000)... done!
+permutation id: 145 (out of 1000)... done!
+permutation id: 149 (out of 1000)... done!
+permutation id: 152 (out of 1000)... done!
+permutation id: 154 (out of 1000)... done!
+permutation id: 155 (out of 1000)... done!
+permutation id: 156 (out of 1000)... done!
+permutation id: 165 (out of 1000)... done!
+permutation id: 171 (out of 1000)... done!
+permutation id: 173 (out of 1000)... done!
+permutation id: 174 (out of 1000)... done!
+permutation id: 175 (out of 1000)... done!
+permutation id: 178 (out of 1000)... done!
+permutation id: 180 (out of 1000)... done!
+permutation id: 183 (out of 1000)... done!
+permutation id: 188 (out of 1000)... done!
+permutation id: 213 (out of 1000)... done!
+permutation id: 214 (out of 1000)... done!
+permutation id: 215 (out of 1000)... done!
+permutation id: 217 (out of 1000)... done!
+permutation id: 232 (out of 1000)... done!
+permutation id: 246 (out of 1000)... done!
+permutation id: 252 (out of 1000)... done!
+permutation id: 255 (out of 1000)... done!
+permutation id: 264 (out of 1000)... done!
+permutation id: 299 (out of 1000)... done!
+permutation id: 302 (out of 1000)... done!
+permutation id: 312 (out of 1000)... done!
+permutation id: 322 (out of 1000)... done!
+permutation id: 335 (out of 1000)... done!
+Permutation test done!
+
+Significant results found!
+
+Associative effect 2
+
+Training main models... done!
+
+Running bootstrapping
+bootstrap id: 1 (out of 1000)... done!
+bootstrap id: 2 (out of 1000)... done!
+bootstrap id: 3 (out of 1000)... done!
+bootstrap id: 4 (out of 1000)... done!
+bootstrap id: 5 (out of 1000)... done!
+bootstrap id: 6 (out of 1000)... done!
+bootstrap id: 7 (out of 1000)... done!
+bootstrap id: 8 (out of 1000)... done!
+bootstrap id: 9 (out of 1000)... done!
+bootstrap id: 10 (out of 1000)... done!
+bootstrap id: 11 (out of 1000)... done!
+bootstrap id: 13 (out of 1000)... done!
+bootstrap id: 14 (out of 1000)... done!
+bootstrap id: 16 (out of 1000)... done!
+bootstrap id: 17 (out of 1000)... done!
+bootstrap id: 18 (out of 1000)... done!
+bootstrap id: 19 (out of 1000)... done!
+bootstrap id: 20 (out of 1000)... done!
+bootstrap id: 21 (out of 1000)... done!
+bootstrap id: 22 (out of 1000)... done!
+bootstrap id: 24 (out of 1000)... done!
+bootstrap id: 25 (out of 1000)... done!
+bootstrap id: 26 (out of 1000)... done!
+bootstrap id: 27 (out of 1000)... done!
+bootstrap id: 29 (out of 1000)... done!
+bootstrap id: 31 (out of 1000)... done!
+bootstrap id: 33 (out of 1000)... done!
+bootstrap id: 35 (out of 1000)... done!
+bootstrap id: 36 (out of 1000)... done!
+bootstrap id: 37 (out of 1000)... done!
+bootstrap id: 38 (out of 1000)... done!
+bootstrap id: 40 (out of 1000)... done!
+bootstrap id: 41 (out of 1000)... done!
+bootstrap id: 42 (out of 1000)... done!
+bootstrap id: 43 (out of 1000)... done!
+bootstrap id: 44 (out of 1000)... done!
+bootstrap id: 45 (out of 1000)... done!
+bootstrap id: 46 (out of 1000)... done!
+bootstrap id: 47 (out of 1000)... done!
+bootstrap id: 48 (out of 1000)... done!
+bootstrap id: 49 (out of 1000)... done!
+bootstrap id: 50 (out of 1000)... done!
+bootstrap id: 51 (out of 1000)... done!
+bootstrap id: 54 (out of 1000)... done!
+bootstrap id: 55 (out of 1000)... done!
+bootstrap id: 57 (out of 1000)... done!
+bootstrap id: 60 (out of 1000)... done!
+bootstrap id: 61 (out of 1000)... done!
+bootstrap id: 62 (out of 1000)... done!
+bootstrap id: 67 (out of 1000)... done!
+bootstrap id: 68 (out of 1000)... done!
+bootstrap id: 69 (out of 1000)... done!
+bootstrap id: 71 (out of 1000)... done!
+bootstrap id: 75 (out of 1000)... done!
+bootstrap id: 76 (out of 1000)... done!
+bootstrap id: 78 (out of 1000)... done!
+bootstrap id: 80 (out of 1000)... done!
+bootstrap id: 82 (out of 1000)... done!
+bootstrap id: 83 (out of 1000)... done!
+bootstrap id: 84 (out of 1000)... done!
+bootstrap id: 86 (out of 1000)... done!
+bootstrap id: 91 (out of 1000)... done!
+bootstrap id: 92 (out of 1000)... done!
+bootstrap id: 93 (out of 1000)... done!
+bootstrap id: 94 (out of 1000)... done!
+bootstrap id: 96 (out of 1000)... done!
+bootstrap id: 107 (out of 1000)... done!
+bootstrap id: 113 (out of 1000)... done!
+bootstrap id: 114 (out of 1000)... done!
+bootstrap id: 116 (out of 1000)... done!
+bootstrap id: 120 (out of 1000)... done!
+bootstrap id: 122 (out of 1000)... done!
+bootstrap id: 125 (out of 1000)... done!
+bootstrap id: 127 (out of 1000)... done!
+bootstrap id: 130 (out of 1000)... done!
+bootstrap id: 133 (out of 1000)... done!
+bootstrap id: 134 (out of 1000)... done!
+bootstrap id: 135 (out of 1000)... done!
+bootstrap id: 137 (out of 1000)... done!
+bootstrap id: 139 (out of 1000)... done!
+bootstrap id: 145 (out of 1000)... done!
+bootstrap id: 149 (out of 1000)... done!
+bootstrap id: 152 (out of 1000)... done!
+bootstrap id: 154 (out of 1000)... done!
+bootstrap id: 155 (out of 1000)... done!
+bootstrap id: 165 (out of 1000)... done!
+bootstrap id: 171 (out of 1000)... done!
+bootstrap id: 173 (out of 1000)... done!
+bootstrap id: 174 (out of 1000)... done!
+bootstrap id: 175 (out of 1000)... done!
+bootstrap id: 178 (out of 1000)... done!
+bootstrap id: 180 (out of 1000)... done!
+bootstrap id: 183 (out of 1000)... done!
+bootstrap id: 188 (out of 1000)... done!
+bootstrap id: 213 (out of 1000)... done!
+bootstrap id: 215 (out of 1000)... done!
+bootstrap id: 217 (out of 1000)... done!
+bootstrap id: 232 (out of 1000)... done!
+bootstrap id: 239 (out of 1000)... done!
+bootstrap id: 246 (out of 1000)... done!
+bootstrap id: 252 (out of 1000)... done!
+bootstrap id: 264 (out of 1000)... done!
+bootstrap id: 274 (out of 1000)... done!
+bootstrap id: 302 (out of 1000)... done!
+bootstrap id: 312 (out of 1000)... done!
+bootstrap id: 322 (out of 1000)... done!
+bootstrap id: 335 (out of 1000)... done!
+bootstrap id: 361 (out of 1000)... done!
+Bootstrapping done!
+
+No significant results found at this level!
+
+>> 
