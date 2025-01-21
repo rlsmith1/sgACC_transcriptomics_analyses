@@ -7,6 +7,7 @@ For details on the CCA/PLS toolkit, refer to the README available in RCCA_toolki
 
 All functions can be found in functions/ and are loaded in scripts/setup.R.
 
+-------------------------------------------------------------------
 The scripts directories are organized as follows:
 * **00.preprocessing** - Clean/organize study covariates and preprocess gene & transcript raw counts; run MCA on toxicology data
 * **01.DGE** - Run standard differential gene expression analysis using DESeq2; characterize results enrichment using GSEA
@@ -22,5 +23,6 @@ The scripts directories are organized as follows:
     - **load_WGCNA_res.R** - Loads WGCNA module assignments, as well as data from load_genes.R (run after 02.WGCNA but before 03.CCA_toolkit_setup)
     - **load_WTCNA_res.R** - Loads WTCNA module assignments, as well as data from load_transcripts.R (run after 05.GRCCA_transcripts/00.case_control_WTCNA.R)
     - **setup.R** - Loads all necessary packages, study covariate data, cell type data, gene ontology pathways, risk gene lists; sources functions in ~/functions; sets plot theme for figures in 07.figures_markdown (run before running anything else!)
+-------------------------------------------------------------------
 
 Individual scripts are commented to describe their specific purpose. For any questions on code/implementation, please email corresponding author rachel.smith2@nih.gov.
