@@ -20,7 +20,8 @@ f_load_cca_res <- function(cca_directory = cca_dir,
                            lambda = "Nfeat",
                            VARx = c("0.1_1", "0.99"),
                            include_Cmat = c(TRUE, FALSE),
-                           rename_covariates = c(TRUE, FALSE)
+                           rename_covariates = c(TRUE, FALSE),
+                           all_effects = c(TRUE, FALSE)
                            ) {
     
 ### Set paths & data split to load results ###
@@ -30,7 +31,8 @@ f_load_cca_res <- function(cca_directory = cca_dir,
     ## Identify correct framework analysis directory
     if (include_Cmat) {cmat <- "withCmat"} else {cmat <- "noCmat"}
     if (analysis_type == "grcca") {group <- paste0("_groupL2x", as.character(mu))} else {group <- ""}
-    analysis_dir <- paste0(analysis_type, "_permutation_VARx", VARx, "_L2x", lambda, group, "_", cmat, "_allEffects")
+    if (all_effects == TRUE) {analysis_dir <- paste0(analysis_type, "_permutation_VARx", VARx, "_L2x", lambda, group, "_", cmat, "_allEffects")
+    } else {analysis_dir <- paste0(analysis_type, "_permutation_VARx", VARx, "_L2x", lambda, group, "_", cmat)}
     
     ## Combine paths to point to results (and check to make sure directory exists)
     results_dir <- paste0(cca_dir, "framework/", analysis_dir)

@@ -50,17 +50,98 @@ df_x_res <- l_grcca_res$x_res %>%
     mutate(gene_symbol = ifelse(is.na(gene_symbol), ensembl_gene_id, gene_symbol))
 
 
+
+# Test the significance of the structure correlation alignment with expression in each diagnostic group ------------------
+
+## Combine structure correlation and expression data
+df_rx_expr <- df_vsd_regress %>% 
+    pivot_longer(contains("ENSG"), names_to = "ensembl_gene_id", values_to = "expression_value") %>% 
+    mutate(dx = case_when(
+        str_detect(sample, "control") ~ "Control",
+        str_detect(sample, "bipolar") ~ "BD",
+        str_detect(sample, "mdd") ~ "MDD",
+        str_detect(sample, "schizo") ~ "SCZ"
+    ) %>% factor(levels = names(dx_colors))) %>% 
+    group_by(ensembl_gene_id, dx) %>% 
+    summarise(mean_expr = mean(expression_value)) %>% 
+    left_join(df_x_res)
+
+
+## Calculate the actual (observed) correlation between rx and mean expression in each diagnostic group
+df_rx_expr_cor <- df_rx_expr %>% 
+    group_by(dx) %>% 
+    group_modify( ~ {
+        
+        test <- cor.test(.x$mean_expr, .x$pearsons_r)
+        
+        tibble(
+            correlation = test$estimate,
+            p_value = test$p.value
+        )
+        
+    }) %>% 
+    ungroup() %>% 
+    mutate(p_adj = p.adjust(p_value, method = "BH"))
+
+## Permute the rx vector and re-calculate the correlation
+n_perm <- 10000
+df_rx_expr_cor_perm <- tibble()
+set.seed(0206)
+for (i in 1:n_perm) {
+    
+    if (i %% 100 == 0) {print(paste0("Running permutation ", i))}
+    
+    # 1: Shuffle structure correlations within module
+    df_perm <- df_rx_expr %>%
+        group_by(module) %>%
+        mutate(permuted_r = sample(pearsons_r, replace = FALSE)) %>%
+        ungroup()
+    
+    # For each diagnostic group, correlate permuted_r with mean_expr
+    df_tmp <- df_perm %>% 
+        group_by(dx) %>% 
+        group_modify( ~ {
+            
+            test <- cor.test(.x$mean_expr, .x$permuted_r)
+            
+            tibble(
+                correlation = test$estimate,
+                p_value = test$p.value
+            )
+            
+        }) %>% 
+        ungroup() %>% 
+        mutate(
+            p_adj = p.adjust(p_value, method = "BH"),
+            perm = i
+        )
+    
+        # Append to tibble
+        df_rx_expr_cor_perm <- df_rx_expr_cor_perm %>% bind_rows(df_tmp)
+    
+}
+
+## Calculate permutation p-values
+df_rx_expr_cor_perm_pvals <- df_rx_expr_cor_perm %>% 
+    left_join(df_rx_expr_cor %>% select(dx, obs_corr = correlation), by = "dx") %>%
+    group_by(dx) %>%
+    summarise(
+        perm_p = (sum(abs(correlation) >= abs(obs_corr)) + 1) / (n_perm + 1)
+    ) %>% 
+    left_join(df_rx_expr_cor)
+
+
 # Save for plotting -------------------------------------------------------
 
 
 # Figures
-save(df_lvs, df_results, df_y_res, df_x_res,
+save(df_lvs, df_results, df_y_res, df_x_res, df_rx_expr_cor_perm_pvals,
      file = paste0(analysis_objects_dir, "GRCCA_results.Rdata")
 )
 
 
 # Downstream analyses
-save(df_lvs, df_results, df_y_res, df_x_res,
+save(df_lvs, df_results, df_y_res, df_x_res, df_rx_expr_cor,
      file = paste0(base_dir, "objects/GRCCA_results.Rdata")
 )
 

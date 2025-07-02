@@ -9,7 +9,7 @@ knitr::opts_chunk$set(fig.width = 2.5, fig.height = 2, collapse = TRUE, warning 
 
 ## Set paths and load data
 base_dir <- "~/Documents/PhD/projects/sgacc_wgcna_grcca/"
-supplement_figures_dir <- paste0(base_dir, "outputs/figures/supplement/")
+supplement_figures_dir <- paste0(base_dir, "outputs/figures/supplement/panels/")
 tables_dir <- paste0(base_dir, "outputs/tables/")
 analysis_objects_dir <- paste0(base_dir, "outputs/objects/")
 
@@ -22,12 +22,6 @@ for (obj in objects){
   print(paste0("loading ", obj, "...."))
   load(paste0(analysis_objects_dir, obj))
 }
-
-## Load Nirmala's DEG results
-df_akula_res <- read_xlsx(path = paste0(base_dir, "data/Akula2021_geneLevel_21kgenes_baseMeanGe5_cqn-Rin-Race-GC_DESeq2-pvalsCorrected_betaPriorT-lfcShrink_092518.xlsx"),
-          sheet = "SczVsCtrls") %>% 
-    clean_names %>% 
-    dplyr::select(ensembl_gene_id, hgnc_symbol, log2fold_change, fold_change, lfc_se, stat, pvalue, padj)
 ```
 
 # TABLES #
@@ -51,12 +45,6 @@ write_xlsx(list("A.GRCCA results" = df_results %>% dplyr::select(-set) %>% dplyr
 ```
 
 ```{r TableS3}
-benchmarking_lists
-```
-
-
-
-```{r TableS3}
 write_xlsx(
     list(
         "A.Risk genes" = df_grcca_fgsea_benchmark %>% 
@@ -75,7 +63,10 @@ write_xlsx(
 ```
 
 ```{r TableS4}
-write_xlsx(df_de_res, path = paste0(tables_dir, "TableS4.DEGs.xlsx"))
+write_xlsx(
+    list("TableS4" = df_limma_res %>% arrange(-abs(t))), 
+    path = paste0(tables_dir, "TableS4.DEGs.xlsx")
+)
 ```
 
 ```{r TableS5}
@@ -115,7 +106,9 @@ path = paste0(tables_dir, "TableS7.WGCNA_module_results.xlsx")
 ```
 
 ```{r TableS8}
-write_xlsx(df_lm_dx %>% dplyr::select(-data) %>% dplyr::filter(p_value < 0.05),
+write_xlsx(df_kme %>% 
+               dplyr::filter(p_value < 0.05 & pc == "PC1") %>% 
+               dplyr::select(-c(data, pc, proportion_of_variance, estimate, std_error)),
            path = paste0(tables_dir, "TableS8.kME_analysis_significant_results.xlsx")
 )
 ```
@@ -228,7 +221,6 @@ map(
 ```
 
 ### B | Correlate qSVs with known covariates
-
 ```{r FigS2b.prep}
 ## Define covariate order based on clustering within each type
 f_define_order <- function(covariate_matrix, covariate_type = c("technical", "biological", "toxicological")) {
@@ -239,16 +231,18 @@ f_define_order <- function(covariate_matrix, covariate_type = c("technical", "bi
     } else if (covariate_type == "toxicological") {
         subset <- drug_covariates
     } else (stop("Covariate type must be technical, biological, or toxicological"))
-    matrix_tmp <- covariate_matrix[subset,]
-   order <- matrix_tmp[hclust(dist(matrix_tmp))$order,] %>% rownames
+    matrix_tmp <- covariate_matrix[,subset]
+   order <- matrix_tmp[hclust(dist(matrix_tmp))$order,] %>% colnames
    return(order)
 }
+m_covariates <- df_covariates_numeric %>% dplyr::select(technical_covariates, biological_covariates, drug_covariates) %>%  as.matrix()
 covariate_order <- c(
     f_define_order(m_covariates, "biological"),
     f_define_order(m_covariates, "toxicological"),
     f_define_order(m_covariates, "technical")
 )
 covariate_order
+
 
 ## Switch major_stimulants_cocaine_included and cannabinoids for the plot
 swtch <- function(vec, value1, value2) {
@@ -373,7 +367,7 @@ map(
 )
 ```
 
-# FIG S3: Drug Multiple Correspondence Analysis results #
+# FIG S3: Toxicology Multiple Correspondence Analysis results #
 
 ### A | Matrix of drug use across 185 samples
 
@@ -555,7 +549,8 @@ df_figS3d <- df_mca_covar_cor %>%
 ```
 
 ```{r FigS3d.plot, fig.width = 3.75, fig.height = 5}
-df_figS3d %>% 
+df_figS3d %>% filter(type != "Diagnostic group") %>% 
+    
     ggplot(aes(x = dimension, y = covariate)) +
     geom_tile(aes(fill = pearsons_r), linewidth = 0.5) +
     geom_text(aes(label = significance), vjust = 0.75, size = 2.5) +
@@ -686,6 +681,7 @@ map(
 ### B | Semantic themes across module GO results
 
 ```{r FigS5b.prep}
+n_topics <- topic_model$settings$dim$K
 ## Extract topic descriptions (frequent words)
 # FREX weights words by frequency and exclusivity to the topic
 df_word_beta <- tidy(topic_model, matrix = "beta") %>%
@@ -852,7 +848,7 @@ map(
 ```
 
 
-# FIG S8: Vector of significant GRCCA genes (FDR_r < 0.05 & z-score > 2) #
+# FIG S8: Vector of significant GRCCA genes (FDR_r < 0.05 & Z-score > 2) #
 
 ```{r FigS8.plot, fig.height = 3}
 df_x_res %>% 
@@ -882,660 +878,10 @@ map(
 )
 ```
 
-
-# FIG S9: Compare current DEGs to Akula et al 2021 DEGs #
-
-```{r FigS9.prep}
-## Combine current study results with Akula 2021
-df_de_akula_res <- df_de_res %>% 
-    mutate(analysis = "current", .before = 1) %>% 
-    
-    bind_rows(df_akula_res %>% 
-                  mutate(analysis = "akula") %>% 
-                  dplyr::rename("gene_symbol" = "hgnc_symbol")
-    )
-```
-
-### A | Venn diagram of significant DEG overlap
-
-```{r FigS9a.prep}
-## Venn diagram (overlap with Nirmala's results)
-my_degs <- df_de_res %>% dplyr::filter(pvalue < 0.05) %>% pull(ensembl_gene_id)
-length(my_degs) # N = 1690
-
-akula_degs <- df_akula_res %>% 
-    dplyr::filter(pvalue < 0.05) %>% 
-    pull(ensembl_gene_id)
-length(akula_degs) # N = 1373
-
-sig_grcca_genes <- df_x_res %>% 
-    dplyr::filter(p_adj < 0.05 & abs(z_score) > 2) %>% 
-    pull(ensembl_gene_id)
-length(sig_grcca_genes) # N = 1211
-
-# Akula DEGs vs my DEGs
-hypergeometric_overlap <- f_hypergeometric(my_degs, akula_degs, gene_universe = ensembl_gene_ids)
-length(hypergeometric_overlap$overlap_genes) # N = 433; P = 5.2*10^-152; OR = 6.7
-
-# GRCCA vs my DEGs
-hypergeometric_overlap <- f_hypergeometric(my_degs, sig_grcca_genes, gene_universe = ensembl_gene_ids)
-length(hypergeometric_overlap$overlap_genes) # N = 211; p < 0.0001; OR = 2.30
-
-# GRCCA vs Akula DEGs
-hypergeometric_overlap <- f_hypergeometric(akula_degs, sig_grcca_genes, gene_universe = ensembl_gene_ids)
-length(hypergeometric_overlap$overlap_genes) # N = 285; p < 0.0001; OR = 5.21
-
-# Combine the data into a named list for ggvenn
-FigS9a_data <- list(
-  `Current study DEGs` = my_degs,
-  `Akula et al 2021 DEGs` = akula_degs,
-  `Significant GRCCA genes` = sig_grcca_genes
-)
-```
-
-```{r FigS9a.plot}
-ggvenn(
-    FigS9a_data, 
-    fill_color = c("#E0E0E0", "#E0E0E0", "#E0E0E0"),
-    stroke_size = 0.75,
-    text_size = 3,
-    set_name_size = 4,
-    show_percentage = FALSE
-) +
-    coord_fixed(clip = "off") +
-    theme_void() +
-    theme(
-        text = element_text(size = 8)
-    )
-map(
-  .x = c(".png", ".pdf"),
-  .f = ~ ggsave(paste0(supplement_figures_dir, "S9A.DEG_GRCCA_venn_diagram", .x), width = fig_width, height = fig_height)
-)
-```
-
-
-### B | Correlation plot of L2FC
-
-```{r FigS9b.prep}
-## Create df for plot
-df_figS9b <- df_de_akula_res %>% 
-    
-    # pivot wider to plot
-    pivot_wider(id_cols = c(ensembl_gene_id, gene_symbol), names_from = analysis, values_from = stat) %>% 
-    dplyr::filter(!is.na(akula)) %>% 
-    
-    # normalize values to compare across analyses
-    #mutate(akula = scale(akula), current = scale(current)) %>% 
-    
-    # add gene labels
-    mutate(label = ifelse(abs(current) > 1.5 & abs(akula) > 1.5, gene_symbol, "")) %>% 
-    
-    # arrange to plot
-    arrange(-abs(current))
-
-```
-
-```{r FigS9b.stats}
-n_perm <- 10000
-df_de_akula_cor_perm <- tibble()
-set.seed(0206)
-for (i in 1:n_perm) {
-    
-    if (i %% 100 == 0) {print(paste0("Running permutation ", i))}
-    
-    # Permute LFC within module
-    df_tmp <- df_figS9b %>% 
-        left_join(df_modules_filt) %>% 
-        group_by(module) %>% 
-        mutate(permuted_lfc = sample(current, replace = FALSE))
-    
-    # Calculate correlation between permuted data and Nirmala's LFC
-    test <- cor.test(df_tmp$permuted_lfc, df_tmp$akula)
-    correlation <- test$estimate
-    p_value <- test$p.value
-
-    # Append to tibble
-    df_de_akula_cor_perm <- df_de_akula_cor_perm %>% 
-        bind_rows(
-            tibble(
-                perm = i,
-                correlation = correlation,
-                p_value = p_value
-            )
-        )
-    
-}
-
-## Calculate permutation p-values
-de_akula_perm_p <- df_de_akula_cor_perm %>% 
-    mutate(obs_corr = cor.test(df_figS9b$current, df_figS9b$akula)$estimate) %>%
-    summarise(
-        perm_p = (sum(abs(correlation) >= abs(obs_corr)) + 1) / (n_perm + 1)
-    )
-```
-
-```{r FigS9b.plot}
-df_figS9b %>% 
-    ggplot(aes(x = akula, y = current)) +
-    geom_point(aes(color = akula), size = 0.75) +
-    geom_hline(aes(yintercept = 0), color = "grey") +
-    geom_vline(aes(xintercept = 0), color = "grey") +
-    geom_smooth(method = "lm", color = "black", linewidth = 0.75) +
-    geom_abline(lty = 2) +
-    #geom_text(x = 2.1, y = 2.6, label = "y = x", check_overlap = TRUE) +
-    geom_text_repel(aes(label = label), min.segment.length = 0, max.overlaps = 15, size = 2.5) +
-    stat_cor(label.sep = "\n", vjust = 1, size = 3.5) +
-    #stat_regline_equation(label.y.npc = "top", vjust = 3) +
-    scale_color_gradientn(colors = rev(brewer.rdbu(100)), limits = c(-6.2, 6.2), guide = "none") +
-    #scale_color_manual(values = c("transparent", "black")) +
-    #guides(color = guide_legend(title = "FDR < 0.05", title.vjust = -1.5)) +
-    labs(x = "Akula DEGs t-statistic", y = "Current DEGs t-statistic", 
-         title = "B | Correlation between \nDGE analysis results") +
-    theme(legend.position = c(0.05, 0.7),
-          legend.spacing.x = unit(0.1, "mm"),
-          legend.background = element_blank(),
-          legend.box.background = element_rect(colour = "black")
-    )
-map(
-  .x = c(".png", ".pdf"),
-  .f = ~ ggsave(paste0(supplement_figures_dir, "S9B.DEG_correlation", .x), width = fig_width, height = fig_height)
-)
-```
-
-### C | Significant DEG overlap with significant GRCCA genes
-
-```{r FigS9c.prep}
-sig_grcca_genes <- df_x_res %>% 
-    dplyr::filter(p_adj < 0.05 & abs(z_score) > 2) %>% 
-    pull(ensembl_gene_id)
-length(sig_grcca_genes) # N = 1211
-length(my_degs) # N = 1690
-length(akula_degs) # N = 1373
-
-# GRCCA vs my DEGs
-hypergeometric_overlap <- f_hypergeometric(my_degs, sig_grcca_genes, gene_universe = ensembl_gene_ids)
-length(hypergeometric_overlap$overlap_genes) # N = 211; p < 0.0001
-
-# GRCCA vs Akula DEGs
-hypergeometric_overlap <- f_hypergeometric(akula_degs, sig_grcca_genes, gene_universe = ensembl_gene_ids)
-length(hypergeometric_overlap$overlap_genes) # N = 285; p < 0.0001
-
-```
-
-
-# FIG S10: Transcript model results (subset and full) #
-
-### A | Optimal model for all transcripts
-
-```{r FigS10a.plot}
-df_results_ALLtranscripts %>% 
-    mutate(significant = ifelse(pval == 0.001, "yes", "no")) %>%
-    
-    ggplot(aes(x = factor(varx*100), y = -log10(pval))) +
-    geom_segment(aes(y = 0, yend = -log10(pval))) +
-    geom_point(aes(size = correl, shape = significant, fill = -log10(pval))) +
-    geom_hline(yintercept = 0, color = "darkgrey") +
-    scale_shape_manual(values = c("yes" = 23, "no" = 21), guide = "none") +
-    scale_fill_gradient(low = "white", high = "#67001F", limits = c(0, 3), guide = "none") +
-    guides(size = guide_legend(title = "X-Y LV correlation", override.aes = list(shape = 21))) +
-    coord_cartesian(clip = "off") +
-    labs(x = "X variance explained (%)", y = "-log10(model p-value)",
-         title = "A | Optimal variance explained \nby model (all transcripts)"
-    ) +
-    theme(
-        legend.position = c(0.55, 0.75),
-        legend.key.size = unit(0.1, "cm")
-    )
-map(
-  .x = c(".png", ".pdf"),
-  .f = ~ ggsave(paste0(supplement_figures_dir, "S10A.optimal_model_all_transcripts", .x), width = fig_width, height = fig_height)
-)
-```
-
-### B | Covariate correlations with the latent variable (all transcripts)
-
-```{r FigS10b.plot}
-df_y_res_ALLtranscripts %>% 
-    mutate(significant = ifelse(abs(z_score) >= 2 & p_adj < 0.05, "*", "")) %>% 
-    
-    ggplot(aes(x = pearsons_r, y = reorder(covariate, pearsons_r))) +
-    geom_point(aes(size = -log10(p_adj), fill = pearsons_r), shape = 21) +
-    geom_vline(xintercept = 0, color = "darkgrey") +
-    #geom_text(aes(label = significant), size = 6, vjust = 0.75, hjust = -1.5, color = "black") +
-    scale_fill_gradientn(colors = gene_weight_color_scale, limits = c(-1, 1), guide = "none") +
-    scale_size_continuous(range = c(2, 6)) +
-    guides(size = guide_legend(title = "-log10(FDR)")) +
-    coord_cartesian(clip = "off") +
-    xlim(c(-1, 1)) +
-    labs(y = NULL, x = expression("Structure correlation (" * italic(r)[y] * ")"), 
-         title = "B | Covariate structure \ncorrelations (all transcripts)") +
-    theme(legend.position = c(0.05, 0.55), 
-          legend.box = "horizontal",
-          #legend.justification = "center",
-          legend.key.size = unit(0.1, 'cm')
-          #legend.key.height = unit(0.29, "cm"),
-          #legend.key.width = unit(0.30, "cm")
-    )
-map(
-  .x = c(".png", ".pdf"),
-  .f = ~ ggsave(paste0(supplement_figures_dir, "S10B.covariate_correlations_all_transcripts", .x), width = fig_width, height = fig_height)
-)
-```
-
-### C | Optimal model for subset transcripts
-
-```{r FigS10c.plot}
-df_results_transcripts %>% 
-    mutate(significant = ifelse(pval == 0.001, "yes", "no")) %>% 
-    ggplot(aes(x = factor(varx*100), y = -log10(pval))) +
-    geom_segment(aes(y = 0, yend = -log10(pval))) +
-    geom_point(aes(size = correl, shape = significant, fill = -log10(pval))) +
-    geom_hline(yintercept = 0, color = "darkgrey") +
-    scale_shape_manual(values = c("yes" = 23, "no" = 21), guide = "none") +
-    scale_fill_gradient(low = "white", high = "#67001F", limits = c(0, 3), guide = "none") +
-    guides(size = guide_legend(title = "X-Y LV correlation", override.aes = list(shape = 21))) +
-    coord_cartesian(clip = "off") +
-    labs(x = "X variance explained (%)", y = "-log10(model p-value)",
-         title = "C | Optimal variance explained \nby model (subset transcripts)"
-    ) +
-    theme(
-        legend.position = c(0.55, 0.75),
-        legend.key.size = unit(0.1, "cm")
-    )
-map(
-  .x = c(".png", ".pdf"),
-  .f = ~ ggsave(paste0(supplement_figures_dir, "S10C.optimal_model_subset_transcripts", .x), width = fig_width, height = fig_height)
-)
-```
-
-
-
-# FIG S11: GRCCA results are related to single-cell expression gradients implicated in SCZ #
-
-```{r FigS11.prep}
-df_figS11 <- df_lf4_grcca %>% 
-    left_join(df_lake_cell_type) %>% 
-    dplyr::filter((type == "Astro" & cell_type == "astrocyte") |
-                      (type == "Neuro-Ex" & cell_type == "glutamatergic") |
-                      (type == "Neuro-In" & cell_type == "gabaergic")
-    )
-```
-
-```{r FigS11.plot, fig.width = 6}
-df_figS11 %>% 
-    ggplot(aes(x = PEER_4, y = pearsons_r)) +
-    geom_vline(aes(xintercept = 0), color = "gray") +
-    geom_hline(aes(yintercept = 0), color = "gray") +
-    geom_point(aes(color = pearsons_r), size = 0.5) +
-    geom_smooth(color = "black", method = "lm", linewidth = 0.75) +
-    stat_cor(label.sep = "\n", size = 3, 
-             label.y.npc = "top", label.x.npc = "right", hjust = 1, vjust = 1) +
-    facet_wrap(vars(cell_type), scales = "free") +
-    scale_color_gradientn(colors = gene_weight_color_scale, guide = "none") +
-    scale_x_continuous(breaks = c(-2000, 0, 2000)) +
-    labs(x = "Ling et al LF4", y = expression("Structure correlation (" * italic(r)[x] * ")"),
-         title = "GRCCA correlation with SNAP program by cell type")
-map(
-  .x = c(".png", ".pdf"),
-  .f = ~ ggsave(paste0(supplement_figures_dir, "S11.correlation_with_SNAP", .x), width = 6, height = fig_height)
-)
-```
-
-
-# FIG S12: WGCNA module - phenotype associations determined through traditional module eigengene analysis #
-
-### A | Module eigengene - covariate significant associations
-
-```{r FigS12a.prep}
-df_figS12a <- df_lm_dx_allPCs %>% 
-    filter(module != "geneM0" & pc == "PC1") %>% 
-    mutate(term = str_replace(term, "MC", "Dim")) %>% 
-    mutate(term = factor(term, levels = c(paste0("Dim", 8:1), names(dx_colors)))) %>%
-    mutate(significant = ifelse(p_value < 0.05, "yes", "no")) %>% 
-    arrange(abs(statistic))
-```
-
-```{r FigS12a.plot, fig.height = 3, fig.width = 6.5}
-df_figS12a %>% 
-    ggplot(aes(x = module, y = term)) +
-    geom_hline(yintercept = 8.5, color = "gray") +
-    geom_point(aes(fill = statistic, size = abs(statistic), color = significant), shape = 21) +
-    scale_fill_gradientn(colors = gene_weight_color_scale, limits = c(-3.3, 3.3)) +
-    scale_color_manual(values = c("yes" = "black", "no" = "grey")) +
-    scale_size_continuous(limits = c(0, 3.3), range = c(0.5, 5), guide = "none") +
-    guides(fill = guide_colorbar(title = "t-statistic", title.position = "top", title.hjust = 0.5),
-           color = guide_legend(title = "P < 0.05", title.position = "top", title.hjust = 0.5)
-    ) +
-    coord_cartesian(clip = "off") +
-    labs(x = NULL, y = NULL,
-         title = "A | Module eigengene - covariate associations"
-    ) +
-    theme(
-        legend.position = "bottom",
-        legend.justification = "center",
-        legend.margin = margin(t = -10),
-        legend.key.height = unit(0.15, "cm"),
-        legend.key.width = unit(0.75, "cm"),
-        axis.text.x = element_text(size = 8.5, angle = 45, hjust = 0.9)
-    )
-map(
-  .x = c(".png", ".pdf"),
-  .f = ~ ggsave(paste0(supplement_figures_dir, "S12a.module_kme_covar_matrix", .x), width = 6.5, height = 3)
-)
-```
-
-
-### B | Modules significantly associated with SCZ per module eigengene analysis
-
-```{r FigS12b.prep}
-df_figS12b <- df_lm_dx_allPCs %>% 
-    dplyr::filter(p_value < 0.05 & term == "SCZ" & pc == "PC1") %>% 
-    unnest(cols = c(data)) %>% 
-    mutate(label = case_when(
-        dx == "SCZ" & p_value < 0.05 & p_adj > 0.05 ~ "*",
-        dx == "SCZ" & p_value < 0.05 & p_adj < 0.05 ~ "**",
-        TRUE ~ ""
-    )
-    )
-```
-
-```{r FigS12b.plot, fig.height = 3, fig.width = 6.5}
-df_figS12b %>% 
-    ggplot(aes(x = pc_resids, y = dx, color = dx, fill = dx)) +
-    geom_point(position = position_jitter(width = 0.1), size = 0.5, alpha = 0.75) +
-    geom_boxplot(alpha = 0.1, outlier.shape = NA) +
-    # geom_text(aes(label = label, x = -Inf), color = "black", size = 6,
-    #           vjust = 0.75, hjust = -0.1, check_overlap = TRUE) +
-    facet_wrap(vars(module), ncol = 3, scales = "free_x") +
-    scale_fill_manual(values = dx_colors) +
-    scale_color_manual(values = dx_colors) +
-    labs(x = "kME (corrected for covariates)", y = NULL,
-         #caption = "* = p < 0.05; ** = FDR < 0.05",
-         title = "B | Module - SCZ associations"
-    ) +
-    theme(legend.position = "none",
-          axis.text.y = element_text(size = 10)
-    )
-map(
-  .x = c(".png", ".pdf"),
-  .f = ~ ggsave(paste0(supplement_figures_dir, "S12B.sig_SCZ_kME_modules", .x), width = 6.5, height = 3)
-)
-```
-
-# FIG S13: WGCNA module enrichment for risk gene lists #
-
-```{r FigS13.prep}
-df_figS13 <- df_mods_risk_gene_hypergeometric %>% 
-    mutate(class = ifelse(str_detect(benchmark_list, "SCZ"), "SCZ", benchmark_list) %>% factor(levels = c("SCZ", "ASD", "BD", "MDD"))) %>% 
-    mutate(benchmark_list = str_remove_all(benchmark_list, "SCZ|\\)|\\(") %>% 
-               str_trim %>% 
-               str_replace(", ", ",\n")
-    ) %>% 
-    filter(module != "geneM0") %>% 
-    mutate(significant = ifelse(p_adj < 0.05, "yes", "no"),
-           very_significant = ifelse(p_adj < 0.001, "***", NA_character_),
-           benchmark_list = ifelse(class != "SCZ", "", benchmark_list),
-           module = factor(module, levels = names(rev(module_colors)))
-    )
-```
-
-```{r FigS13.plot, fig.width = 5, fig.height = 5}
-df_figS13 %>% 
-    ggplot(aes(x = benchmark_list, y = module)) +
-    # Layer 1: fill with variable alpha
-    geom_point(aes(fill = module, size = -log10(p_adj), alpha = -log10(p_adj)), color = "transparent", shape = 21, stroke = 0.75) +
-    # Layer 2: Border only, no alpha applied
-    geom_point(aes(size = -log10(p_adj), color = significant), fill = "transparent", shape = 21, stroke = 0.75) +
-
-    geom_text(aes(label = very_significant), size = 4, color = "black", vjust = 0.75) +
-    facet_wrap(vars(class), scales = "free_x", nrow = 1) +
-    force_panelsizes(cols = c(3,1,1,1)) +
-    scale_alpha_continuous(guide = "none") +
-    scale_fill_manual(values = module_colors, guide = "none") +
-    scale_color_manual(values = c("yes" = "black", "no" = "grey"), guide = "none") +
-    guides(color = guide_legend(title = "FDR < 0.05"),
-           size = guide_legend(title = "-log10(FDR)")
-    ) +
-    coord_cartesian(clip = "off") +
-    labs(x = NULL, y = NULL, 
-         title = "Risk gene list enrichment across WGCNA modules") +
-    theme(legend.margin = margin(l = -15))
-map(
-  .x = c(".png", ".pdf"),
-  .f = ~ ggsave(paste0(supplement_figures_dir, "S13.risk_gene_module_hypergeometric", .x), width = 5, height = 5)
-)
-```
-
-
-# FIG S14: Functional enrichment of GRCCA overrepresented WGCNA modules #
-
-### A | Hypergeometric overlap of WGCNA modules and significant GRCCA genes
-
-```{r FigS14a.prep}
-## Identify significant GRCCA genes (FDR < 0.05 & |z| > 2)
-sig_grcca_genes <- df_x_res %>% 
-    dplyr::filter(p_adj < 0.05 & abs(z_score) > 2) %>% 
-    pull(ensembl_gene_id)
-# n = 1211
-
-## Hypergeometric test for significant overlap with modules
-df_grcca_module_hypergeometric <- map_dfr(
-    .x = names(module_colors),
-    .f = ~ f_module_hypergeometric(
-        gene_list = sig_grcca_genes, 
-        gene_list_name = "", 
-        wgcna_module = .x, 
-        gene_universe = ensembl_gene_ids
-    ) %>% 
-        dplyr::select(-gene_list)
-) %>% 
-    mutate(p_adj = p.adjust(p_value, method = "fdr")) %>% 
-    arrange(p_adj) %>% 
-    mutate(module = factor(module, levels = names(module_colors))) %>% 
-    
-    # specify modules to label
-    mutate(module_label = ifelse(p_adj < 0.05, paste0("N = ", overlap_n), ""))
-```
-
-```{r FigS10a.plot, fig.height = 5, fig.width = 2.15}
-f_plot_module_hypergeometric(df_grcca_module_hypergeometric %>% mutate(p_adj = ifelse(p_adj == 0, 10^-5, p_adj)) %>% dplyr::filter(module != "geneM0"),
-                             x_axis = "p-adj",
-                             plot_title = "A | GRCCA significant modules",
-                             #subset_x_labs = TRUE,
-                             include_module_labels = TRUE,
-                             module_text_size = 3,
-                             legend_position = "none",
-                             p_value_threshold = 0.05,
-                             include_threshold_label = TRUE
-)
-map(
-  .x = c(".png", ".pdf"),
-  .f = ~ ggsave(paste0(supplement_figures_dir, "S14A.GRCCA_module_hypergeometric", .x), width = 2.15, height = 5)
-)
-```
-
-### B | Direction of significant genes in top modules
-
-```{r FigS14b.prep}
-## Identify significant modules
-sig_modules <- df_grcca_module_hypergeometric %>% dplyr::filter(module != "geneM0" & p_adj < 0.05) %>% pull(module) %>% sort()
-
-## Identify panel sizes (number of significant genes in each module)
-panel_widths <- df_x_res %>% 
-    dplyr::filter(module %in% sig_modules & ensembl_gene_id %in% sig_grcca_genes) %>% 
-    dplyr::count(module) %>% 
-    pull(n)
-```
-
-```{r FigS14b.plot, fig.height = 5, fig.width = 2.15}
-df_x_res %>% 
-    dplyr::filter(module %in% sig_modules & ensembl_gene_id %in% sig_grcca_genes) %>% 
-    mutate(weight = ifelse(significant == 1, weight, 0)) %>% 
-    
-    ggplot(aes(x = reorder_within(ensembl_gene_id, within = module, by = pearsons_r), y = pearsons_r)) +
-    geom_col(aes(fill = module, alpha = abs(pearsons_r))) +
-    facet_wrap(vars(module), ncol = 1, scales = "free_y") +
-    force_panelsizes(rows = panel_widths) +
-    scale_fill_manual(values = module_colors) +
-    scale_alpha_continuous(range = c(0.3, 1)) +
-    labs(title = "B | Significant module genes",
-         x = "Gene", y = expression("Structure correlation (" * italic(r)[x] * ")")) +
-    guides(fill = guide_legend(nrow = 2)) +
-    coord_flip() +
-    theme(axis.text.y = element_blank(),
-          axis.ticks.y = element_blank(),
-          strip.text = element_blank(),
-          legend.position = "none",
-          panel.spacing = unit(0.3, "lines")
-    )
-map(
-  .x = c(".png", ".pdf"),
-  .f = ~ ggsave(paste0(supplement_figures_dir, "S14B.sig_module_direction", .x), width = 2.15, height = 5)
-)
-
-```
-
-### C | GO BP enrichments of significant modules
-
-```{r FigS14c.prep}
-# Filter for GRCCA modules of interest & take top 5 pathways for each
-df_figS14c <- df_mods_go %>% 
-    dplyr::filter(module %in% sig_modules) %>% 
-    group_by(module) %>% 
-    top_n(5, wt = -log10(pvalue)) %>% 
-    mutate(Description = str_wrap(Description, width = 23.5))
-```
-
-```{r FigS14c.bubbleplot, fig.height = 5, fig.width = 2.15}
-df_figS14c %>% 
-    ggplot(aes(x = p.adjust, y = reorder_within(Description, -p.adjust, module))) +
-    geom_point(aes(size = RichFactor, fill = module), shape = 21) +
-    facet_wrap(vars(module), scales = "free_y", ncol = 1) +
-    scale_fill_manual(values = module_colors, guide = "none") +
-    scale_y_reordered() +
-    scale_x_reverse(breaks = c(0.00005, 0.00)) +
-    scale_size_continuous(range = c(1, 4)) +
-    coord_cartesian(clip = "off") +
-    labs(x = "Enrichment FDR", y = NULL,
-         title = "C | Module enrichments") +
-    theme(
-        legend.position = c(-1.6, 1.05),
-        legend.key.size = unit(0.2, "cm"),
-        axis.text = element_text(size = 8.5)
-    )
-map(
-  .x = c(".png", ".pdf"),
-  .f = ~ ggsave(paste0(supplement_figures_dir, "S14C.sig_GRCCA_module_enrichments", .x), width = 2.15, height = 5)
-)
-```
-
-
-# FIG S15: Compare GRCCA and RCCA directly #
-
-### A | Correlate GRCCA and RCCA covariate (y) structure correlations
-
-```{r FigS15a.plot}
-df_y_res_all %>% 
-    pivot_wider(id_cols = covariate, names_from = analysis, values_from = pearsons_r) %>% 
-    ggplot(aes(x = rcca, y = grcca)) +
-    geom_point(aes(fill = rcca + grcca), shape = 21, size = 2.5) +
-    geom_vline(aes(xintercept = 0), color = "gray") +
-    geom_hline(aes(yintercept = 0), color = "gray") +
-    geom_abline(lty = 2) +
-    geom_text_repel(aes(label = covariate), size = 2.5, max.overlaps = 20, box.padding = 1.25,
-                     nudge_y = 0.3, force = 150) +
-    scale_fill_gradientn(colors = gene_weight_color_scale, limits = c(-1.84, 1.84), guide = "none") +
-    labs(title = "A | Covariate structure correlations",
-         x = "RCCA", y = "GRCCA")
-map(
-  .x = c(".png", ".pdf"),
-  .f = ~ ggsave(paste0(supplement_figures_dir, "S15A.covariate_structCor_correlation", .x), width = fig_width, height = fig_height)
-)
-```
-
-### B | Correlate GRCCA and RCCA gene (x) structure correlations
-
-```{r FigS15b.plot}
-df_x_res_all %>% 
-    pivot_wider(id_cols = ensembl_gene_id, names_from = analysis, values_from = pearsons_r) %>% 
-    ggplot(aes(x = rcca, y = grcca)) +
-    geom_point(aes(color = rcca + grcca), size = 1) +
-    geom_vline(aes(xintercept = 0), color = "gray") +
-    geom_hline(aes(yintercept = 0), color = "gray") +
-    geom_abline(lty = 2) +
-    stat_cor(label.sep = "\n") +
-    #geom_label_repel(aes(label = gene_symbol), size = 3, max.overlaps = 50, box.padding = 1.5) +
-    scale_color_gradientn(colors = gene_weight_color_scale, limits = c(-1.14, 1.14), guide = "none") +
-    labs(title = "B | Gene structure correlations",
-         x = "RCCA", y = "GRCCA")
-map(
-  .x = c(".png", ".pdf"),
-  .f = ~ ggsave(paste0(supplement_figures_dir, "S15B.gene_structCor_correlation", .x), width = fig_width, height = fig_height)
-)
-```
-
-### C | Venn diagram of significant gene overlap (made in PowerPoint/Inkscape)
-
-```{r FigS15c.prep}
-## Venn diagram (overlap with Nirmala's results)
-sig_rcca_genes <- df_x_res_rcca %>% 
-    dplyr::filter(p_adj < 0.05 & abs(z_score) > 2) %>% 
-    pull(ensembl_gene_id)
-length(sig_grcca_genes) # N = 1211
-length(sig_rcca_genes) # N = 2026
-hypergeometric_overlap <- f_hypergeometric(sig_grcca_genes, sig_rcca_genes, gene_universe = ensembl_gene_ids)
-length(hypergeometric_overlap$overlap_genes) # N = 855; P < 0.0001
-```
-
-### D | RCCA results risk gene enrichment
-
-```{r FigS15d.prep}
-df_fig13d <- df_rcca_fgsea_benchmark %>% 
-    mutate(class = ifelse(str_detect(benchmark_list, "SCZ"), "SCZ", "other") %>% factor(levels = c("SCZ", "other"))) %>% 
-    mutate(benchmark_list = str_remove_all(benchmark_list, "SCZ|\\)|\\(") %>% 
-               str_trim %>% 
-               str_replace(", ", ",\n")
-    ) %>% 
-    mutate(label_color = ifelse(padj < 0.05, "white", "black")) %>% 
-    mutate(box_color = ifelse(padj < 0.05, "black", "transparent")) %>% 
-    mutate(label = round(NES, 2) %>% format(digits = 3))
-    #mutate(sig = ifelse(padj < 0.05, scientific(padj, digits = 3), round(padj, 2) %>% format(digits = 3)))
-   # mutate(sig = case_when(padj < 0.001 ~ "***", padj < 0.01 ~ "**", padj < 0.05 ~ "*", TRUE ~ ""))
-```
-
-```{r FigS15d.plot}
-df_fig13d %>% 
-    ggplot(aes(x = benchmark_list, y = 1)) +
-    geom_tile(aes(fill = NES, color = I(box_color)), width = 0.95, height = 0.95, linewidth = 0.75) +
-    geom_text(aes(label = label, color = I(label_color)), size = 3) +
-    facet_wrap(vars(class), scales = "free", nrow = 2) +
-    scale_fill_gradient(low = "white", high = "#67001F", limits = c(0.838, 1.58)) +
-    guides(fill = guide_colorbar(title.hjust = 0.5, title.position = "left")) +
-    labs(x = NULL, y = NULL,
-         title = "D | Risk gene enrichment") +
-    theme(axis.text.y = element_blank(),
-          axis.ticks = element_blank(),
-          axis.line = element_blank(),
-          axis.text.x = element_text(margin = margin(t = -3)),
-          strip.background = element_rect(fill = "white", color = "black"),
-          legend.margin = margin(r = -15),
-          legend.position = "left",
-          legend.justification = "top",
-          legend.title = element_text(angle = 90),
-          legend.key.height = unit(0.75, "cm"),
-          legend.key.width = unit(0.15, "cm")
-    )
-map(
-  .x = c(".png", ".pdf"),
-  .f = ~ ggsave(paste0(supplement_figures_dir, "S15D.Risk_gene_enrichment", .x), width = fig_width, height = fig_height)
-)
-```
-
-
-# FIG S16: Compare across WGCNA module solutions
+# FIG S9: Compare across WGCNA module solutions
 
 ### A | Model significance
-```{r FigS16a, fig.width = 6.5, fig.height = 2}
+```{r FigS9a, fig.width = 6.5, fig.height = 2}
 df_model_res_wgcna_groups %>% 
     group_by(mod_set) %>% 
     mutate(best = ifelse(pval == min(pval), 1, 0)) %>% 
@@ -1573,12 +919,12 @@ df_model_res_wgcna_groups %>%
     )
 map(
   .x = c(".png", ".pdf"),
-  .f = ~ ggsave(paste0(supplement_figures_dir, "S16A.wgcna_groups_model_significance", .x), width = 6.5, height = 2)
+  .f = ~ ggsave(paste0(supplement_figures_dir, "S9A.wgcna_groups_model_significance", .x), width = 6.5, height = 2)
 )
 ```
 
 ### B | X and Y results correlations
-```{r FigS16b, fig.width = 4.0, fig.height = 3.75}
+```{r FigS9b, fig.width = 4.0, fig.height = 3.75}
 # Plot
 plot_y_func <- function(data, mapping, ...) {
     ggplot(data = data, mapping = mapping) +
@@ -1614,12 +960,12 @@ ggpairs(df_y_res_wgcna_groups %>%
     )
 map(
   .x = c(".png", ".pdf"),
-  .f = ~ ggsave(paste0(supplement_figures_dir, "S16B.wgcna_groups_x_y_cor", .x), width = 4.0, height = 3.75)
+  .f = ~ ggsave(paste0(supplement_figures_dir, "S9B.wgcna_groups_x_y_cor", .x), width = 4.0, height = 3.75)
 )
 ```
 
 ### C | Enrichment for risk genes
-```{r FigS16c, fig.height = 3.75, fig.width = 2.4}
+```{r FigS9c, fig.height = 3.75, fig.width = 2.4}
 df_benchmarking_res_wgcna_groups %>%
     mutate(significant = ifelse(padj < 0.05, "yes", "no")) %>%
     mutate(class = ifelse(str_detect(benchmark_list, "SCZ"), 
@@ -1661,15 +1007,15 @@ df_benchmarking_res_wgcna_groups %>%
     )
 map(
   .x = c(".png", ".pdf"),
-  .f = ~ ggsave(paste0(supplement_figures_dir, "S16C.wgcna_groups_benchmarking", .x), width = 2.4, height = 3.75)
+  .f = ~ ggsave(paste0(supplement_figures_dir, "S9C.wgcna_groups_benchmarking", .x), width = 2.4, height = 3.75)
 )
 ```
 
 
-# FIG S17: Compare across random module solutions
+# FIG S10: Compare across random module solutions
 
 ### A | Model significance
-```{r FigS17a, fig.width = 6.5, fig.height = 2}
+```{r FigS10a, fig.width = 6.5, fig.height = 2}
 seeds <- df_model_res_random_groups %>% filter(seed != "actual") %>% pull(seed) %>% unique
 df_model_res_random_groups %>% 
     group_by(seed) %>% 
@@ -1705,12 +1051,12 @@ df_model_res_random_groups %>%
     )
 map(
   .x = c(".png", ".pdf"),
-  .f = ~ ggsave(paste0(supplement_figures_dir, "S17A.random_groups_model_significance", .x), width = 6.5, height = 2)
+  .f = ~ ggsave(paste0(supplement_figures_dir, "S10A.random_groups_model_significance", .x), width = 6.5, height = 2)
 )
 ```
 
 ### B | X and Y results correlations
-```{r FigS17b, fig.width = 6.5, fig.height = 2}
+```{r FigS10b, fig.width = 6.5, fig.height = 2}
 df_y_res_random_groups %>% 
     pivot_longer(contains("seed"), names_to = "seed", values_to = "random") %>%
     mutate(type = "Covariates \n(ry)") %>% 
@@ -1743,13 +1089,12 @@ df_y_res_random_groups %>%
     )
 map(
   .x = c(".png", ".pdf"),
-  .f = ~ ggsave(paste0(supplement_figures_dir, "S17B.random_groups_x_y_cor", .x), width = 6.5, height = 2)
+  .f = ~ ggsave(paste0(supplement_figures_dir, "S10B.random_groups_x_y_cor", .x), width = 6.5, height = 2)
 )
 ```
 
-
 ### C | Enrichment for risk genes
-```{r FigS17c, fig.height = 2, fig.width = 6.5}
+```{r FigS10c, fig.height = 2, fig.width = 6.5}
 df_benchmarking_res_random_groups %>%
     mutate(significant = ifelse(padj < 0.05, "yes", "no")) %>%
     mutate(class = ifelse(str_detect(benchmark_list, "SCZ"), 
@@ -1784,18 +1129,695 @@ df_benchmarking_res_random_groups %>%
     )
 map(
   .x = c(".png", ".pdf"),
-  .f = ~ ggsave(paste0(supplement_figures_dir, "S17C.random_groups_benchmarking", .x), width = 6.5, height = 2)
+  .f = ~ ggsave(paste0(supplement_figures_dir, "S10C.random_groups_benchmarking", .x), width = 6.5, height = 2)
 )
 ```
 
 
-# FIG S18: Developmental expression trajectories of GRCCA genes
+# FIG S11: Compare GRCCA and RCCA directly #
 
-### C | Developmental expression trajectories of GRCCA deciles
+### A | Correlate GRCCA and RCCA covariate (y) structure correlations
+```{r FigS11a.plot}
+df_y_res_all %>% 
+    pivot_wider(id_cols = covariate, names_from = analysis, values_from = pearsons_r) %>% 
+    ggplot(aes(x = rcca, y = grcca)) +
+    geom_point(aes(fill = rcca + grcca), shape = 21, size = 2.5) +
+    geom_vline(aes(xintercept = 0), color = "gray") +
+    geom_hline(aes(yintercept = 0), color = "gray") +
+    geom_abline(lty = 2) +
+    geom_text_repel(aes(label = covariate), size = 2.5, max.overlaps = 20, box.padding = 1.25,
+                     nudge_y = 0.3, force = 150) +
+    scale_fill_gradientn(colors = gene_weight_color_scale, limits = c(-1.84, 1.84), guide = "none") +
+    labs(title = "A | Covariate structure correlations",
+         x = "RCCA", y = "GRCCA")
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supplement_figures_dir, "S11A.covariate_structCor_correlation", .x), width = fig_width, height = fig_height)
+)
+```
 
-```{r Fig3c.prep}
+### B | Correlate GRCCA and RCCA gene (x) structure correlations
+```{r FigS11b.plot}
+df_x_res_all %>% 
+    pivot_wider(id_cols = ensembl_gene_id, names_from = analysis, values_from = pearsons_r) %>% 
+    ggplot(aes(x = rcca, y = grcca)) +
+    geom_point(aes(color = rcca + grcca), size = 1) +
+    geom_vline(aes(xintercept = 0), color = "gray") +
+    geom_hline(aes(yintercept = 0), color = "gray") +
+    geom_abline(lty = 2) +
+    stat_cor(label.sep = "\n") +
+    #geom_label_repel(aes(label = gene_symbol), size = 3, max.overlaps = 50, box.padding = 1.5) +
+    scale_color_gradientn(colors = gene_weight_color_scale, limits = c(-1.14, 1.14), guide = "none") +
+    labs(title = "B | Gene structure correlations",
+         x = "RCCA", y = "GRCCA")
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supplement_figures_dir, "S11B.gene_structCor_correlation", .x), width = fig_width, height = fig_height)
+)
+```
+
+### C | Venn diagram of significant gene overlap (made in PowerPoint/Inkscape)
+```{r FigS11c.prep}
+## Venn diagram (overlap with Nirmala's results)
+sig_grcca_genes <- df_x_res %>%
+    dplyr::filter(p_adj < 0.05 & abs(z_score) > 2) %>%
+    pull(ensembl_gene_id)
+sig_rcca_genes <- df_x_res_rcca %>% 
+    dplyr::filter(p_adj < 0.05 & abs(z_score) > 2) %>% 
+    pull(ensembl_gene_id)
+length(sig_grcca_genes) # N = 1211
+length(sig_rcca_genes) # N = 2026
+hypergeometric_overlap <- f_hypergeometric(sig_grcca_genes, sig_rcca_genes, gene_universe = ensembl_gene_ids)
+length(hypergeometric_overlap$overlap_genes) # N = 855; P < 0.0001
+```
+
+### D | RCCA results risk gene enrichment
+```{r FigS11d.prep}
+df_fig13d <- df_rcca_fgsea_benchmark %>% 
+    mutate(class = ifelse(str_detect(benchmark_list, "SCZ"), "SCZ", "other") %>% factor(levels = c("SCZ", "other"))) %>% 
+    mutate(benchmark_list = str_remove_all(benchmark_list, "SCZ|\\)|\\(") %>% 
+               str_trim %>% 
+               str_replace(", ", ",\n")
+    ) %>% 
+    mutate(label_color = ifelse(padj < 0.05, "white", "black")) %>% 
+    mutate(box_color = ifelse(padj < 0.05, "black", "transparent")) %>% 
+    mutate(label = round(NES, 2) %>% format(digits = 3))
+    #mutate(sig = ifelse(padj < 0.05, scientific(padj, digits = 3), round(padj, 2) %>% format(digits = 3)))
+   # mutate(sig = case_when(padj < 0.001 ~ "***", padj < 0.01 ~ "**", padj < 0.05 ~ "*", TRUE ~ ""))
+```
+
+```{r FigS11d.plot}
+df_fig13d %>% 
+    ggplot(aes(x = benchmark_list, y = 1)) +
+    geom_tile(aes(fill = NES, color = I(box_color)), width = 0.95, height = 0.95, linewidth = 0.75) +
+    geom_text(aes(label = label, color = I(label_color)), size = 3) +
+    facet_wrap(vars(class), scales = "free", nrow = 2) +
+    scale_fill_gradient(low = "white", high = "#67001F", limits = c(0.838, 1.58)) +
+    guides(fill = guide_colorbar(title.hjust = 0.5, title.position = "left")) +
+    labs(x = NULL, y = NULL,
+         title = "D | Risk gene enrichment") +
+    theme(axis.text.y = element_blank(),
+          axis.ticks = element_blank(),
+          axis.line = element_blank(),
+          axis.text.x = element_text(margin = margin(t = -3)),
+          strip.background = element_rect(fill = "white", color = "black"),
+          legend.margin = margin(r = -15),
+          legend.position = "left",
+          legend.justification = "top",
+          legend.title = element_text(angle = 90),
+          legend.key.height = unit(0.75, "cm"),
+          legend.key.width = unit(0.15, "cm")
+    )
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supplement_figures_dir, "S11D.Risk_gene_enrichment", .x), width = fig_width, height = fig_height)
+)
+```
+
+
+# FIG S12: Compare limme DEG results with Akula et al 2021 #
+
+### A | Venn diagram of significant DEG overlap
+```{r FigS12a.prep}
+## Venn diagram (overlap with Nirmala's results)
+my_degs <- df_limma_res %>% dplyr::filter(p_value < 0.05) %>% pull(ensembl_gene_id)
+length(my_degs) # N = 1389
+
+akula_degs <- df_akula_res %>% 
+    dplyr::filter(pvalue < 0.05) %>% 
+    pull(ensembl_gene_id)
+length(akula_degs) # N = 1373
+
+sig_grcca_genes <- df_x_res %>% 
+    dplyr::filter(p_adj < 0.05 & abs(z_score) > 2) %>% 
+    pull(ensembl_gene_id)
+length(sig_grcca_genes) # N = 1211
+
+# Akula DEGs vs my DEGs
+hypergeometric_overlap <- f_hypergeometric(my_degs, akula_degs, gene_universe = ensembl_gene_ids)
+length(hypergeometric_overlap$overlap_genes) # N = 385; P = 1.9*10^-145; OR = 7.17
+
+# GRCCA vs my DEGs
+hypergeometric_overlap <- f_hypergeometric(my_degs, sig_grcca_genes, gene_universe = ensembl_gene_ids)
+length(hypergeometric_overlap$overlap_genes) # N = 203; P = 1.5*10^-29; OR = 2.77
+
+# GRCCA vs Akula DEGs
+hypergeometric_overlap <- f_hypergeometric(akula_degs, sig_grcca_genes, gene_universe = ensembl_gene_ids)
+length(hypergeometric_overlap$overlap_genes) # N = 285; P = 2.3*10^-85; OR = 5.19
+
+# Combine the data into a named list for ggvenn
+FigS12a_data <- list(
+  `Current study DEGs` = my_degs,
+  `Akula et al 2021 DEGs` = akula_degs,
+  `Significant GRCCA genes` = sig_grcca_genes
+)
+```
+
+```{r FigS12a.plot}
+ggvenn(
+    FigS12a_data, 
+    fill_color = c("#E0E0E0", "#E0E0E0", "#E0E0E0"),
+    stroke_size = 0.75,
+    text_size = 3,
+    set_name_size = 4,
+    show_percentage = FALSE
+) +
+    coord_fixed(clip = "off") +
+    theme_void() +
+    theme(
+        text = element_text(size = 8)
+    )
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supplement_figures_dir, "S12A.DEG_GRCCA_venn_diagram", .x), width = fig_width, height = fig_height)
+)
+```
+
+### B | Correlation plot of L2FC
+```{r FigS12b.stats}
+
+### PERMUTE L2FC CORRELATION ###
+n_perm <- 10000
+df_limma_akula_cor_perm <- tibble()
+set.seed(0406)
+for (i in 1:n_perm) {
+    
+    if (i %% 100 == 0) {print(paste0("Running permutation ", i))}
+    
+    # Permute LFC within module
+    df_tmp <- df_de_res_all %>% 
+        left_join(df_modules_filt) %>%
+        filter(!is.na(Akula) & metric == "l2fc") %>% 
+        group_by(module) %>%
+        mutate(permuted_l2fc = sample(Limma, replace = FALSE))
+    
+    # Calculate correlation between permuted data and Nirmala's LFC
+    test <- cor.test(df_tmp$permuted_l2fc, df_tmp$Akula)
+    correlation <- test$estimate
+    p_value <- test$p.value
+
+    # Append to tibble
+    df_limma_akula_cor_perm <- df_limma_akula_cor_perm %>% 
+        bind_rows(
+            tibble(
+                perm = i,
+                correlation = correlation,
+                p_value = p_value
+            )
+        )
+    
+}
+
+## Calculate permutation p-values
+de_limma_akula_perm_p <- df_limma_akula_cor_perm %>% 
+    mutate(obs_corr = cor.test(
+        df_de_res_all %>% filter(!is.na(Akula) & metric == "l2fc") %>% pull(Limma), 
+        df_de_res_all %>% filter(!is.na(Akula) & metric == "l2fc") %>% pull(Akula), 
+        )$estimate
+    ) %>%
+    summarise(
+        perm_p = (sum(abs(correlation) >= abs(obs_corr)) + 1) / (n_perm + 1)
+    )
+#Pperm=1*10^-4
+
+
+### PERMUTE T-STAT CORRELATION ###
+n_perm <- 10000
+df_limma_akula_cor_perm <- tibble()
+set.seed(0406)
+for (i in 1:n_perm) {
+    
+    if (i %% 100 == 0) {print(paste0("Running permutation ", i))}
+    
+    # Permute LFC within module
+    df_tmp <- df_de_res_all %>% 
+        left_join(df_modules_filt) %>%
+        filter(!is.na(Akula) & metric == "t_stat") %>% 
+        group_by(module) %>%
+        mutate(permuted_t = sample(Limma, replace = FALSE))
+    
+    # Calculate correlation between permuted data and Nirmala's LFC
+    test <- cor.test(df_tmp$permuted_t, df_tmp$Akula)
+    correlation <- test$estimate
+    p_value <- test$p.value
+
+    # Append to tibble
+    df_limma_akula_cor_perm <- df_limma_akula_cor_perm %>% 
+        bind_rows(
+            tibble(
+                perm = i,
+                correlation = correlation,
+                p_value = p_value
+            )
+        )
+    
+}
+
+## Calculate permutation p-values
+de_limma_akula_perm_p <- df_limma_akula_cor_perm %>% 
+    mutate(obs_corr = cor.test(
+        df_de_res_all %>% filter(!is.na(Akula) & metric == "t_stat") %>% pull(Limma), 
+        df_de_res_all %>% filter(!is.na(Akula) & metric == "t_stat") %>% pull(Akula), 
+        )$estimate
+    ) %>%
+    summarise(
+        perm_p = (sum(abs(correlation) >= abs(obs_corr)) + 1) / (n_perm + 1)
+    )
+#Pperm=1*10^-4
+
+```
+
+```{r FigS12b.prep}
+## Create df for plot
+df_figS12b <- df_de_res_all %>% 
+    
+    # remove genes that were not included in Nirmala's analysis
+    dplyr::filter(!is.na(Akula)) %>% 
+    
+    # normalize values to compare across analyses
+    #mutate(akula = scale(akula), current = scale(current)) %>% 
+    
+    # add gene labels
+    mutate(label = ifelse(abs(Limma) > 1.5 & abs(Akula) > 1.5, gene_symbol, "")) %>% 
+    
+    # arrange to plot
+    arrange(-abs(Limma))
+
+```
+
+```{r FigS12b.plot, fig.width = 4, fig.height = 2.25}
+df_de_res_all %>% 
+    #filter(metric == "l2fc") %>%
+    #mutate(color = scale(Akula)[,1] + scale(Limma)[,1]) %>% 
+    mutate(metric = ifelse(metric == "l2fc", "L2FC", "t-statistic")) %>% 
+    
+    ggplot(aes(x = Akula, y = Limma)) +
+    geom_hline(yintercept = 0, color = "gray") +
+    geom_vline(xintercept = 0, color = "gray") +
+    geom_abline(lty = 2) +
+    geom_point(color = "darkgray", size = 0.25) +
+    # geom_text_repel(aes(label = label), min.segment.length = 0, max.overlaps = 15, size = 2.5) +
+    geom_smooth(method = "lm", linewidth = 0.5, color = "maroon") +
+    stat_cor(label.sep = "\n", size = 3, vjust = 1) +
+    facet_wrap(vars(metric), scales = "free") +
+    #scale_color_gradientn(colors = rev(brewer.rdbu(100)), guide = "none") +
+    labs(
+        x = "Akula DGE (DESeq2)", y = "Current study DGE (Limma-voom)",
+        title = "B | Correlation between DGE analysis results"
+    )
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supplement_figures_dir, "S12B.DEG_correlation", .x), width = 4, height = 2.25)
+)
+```
+
+
+# FIG S13: Transcript model results (subset and full) #
+
+### A | Optimal model for all transcripts
+```{r FigS13a.plot}
+df_results_ALLtranscripts %>% 
+    mutate(significant = ifelse(pval == 0.001, "yes", "no")) %>%
+    
+    ggplot(aes(x = factor(varx*100), y = -log10(pval))) +
+    geom_segment(aes(y = 0, yend = -log10(pval))) +
+    geom_point(aes(size = correl, shape = significant, fill = -log10(pval))) +
+    geom_hline(yintercept = 0, color = "darkgrey") +
+    scale_shape_manual(values = c("yes" = 23, "no" = 21), guide = "none") +
+    scale_fill_gradient(low = "white", high = "#67001F", limits = c(0, 3), guide = "none") +
+    guides(size = guide_legend(title = "X-Y LV correlation", override.aes = list(shape = 21))) +
+    coord_cartesian(clip = "off") +
+    labs(x = "X variance explained (%)", y = "-log10(model p-value)",
+         title = "A | Optimal variance explained \nby model (all transcripts)"
+    ) +
+    theme(
+        legend.position = c(0.55, 0.75),
+        legend.key.size = unit(0.1, "cm")
+    )
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supplement_figures_dir, "S13A.optimal_model_all_transcripts", .x), width = fig_width, height = fig_height)
+)
+```
+
+### B | Covariate correlations with the latent variable (all transcripts)
+```{r FigS13b.plot}
+df_y_res_ALLtranscripts %>% 
+    mutate(significant = ifelse(abs(z_score) >= 2 & p_adj < 0.05, "*", "")) %>% 
+    
+    ggplot(aes(x = pearsons_r, y = reorder(covariate, pearsons_r))) +
+    geom_point(aes(size = -log10(p_adj), fill = pearsons_r), shape = 21) +
+    geom_vline(xintercept = 0, color = "darkgrey") +
+    #geom_text(aes(label = significant), size = 6, vjust = 0.75, hjust = -1.5, color = "black") +
+    scale_fill_gradientn(colors = gene_weight_color_scale, limits = c(-1, 1), guide = "none") +
+    scale_size_continuous(range = c(2, 6)) +
+    guides(size = guide_legend(title = "-log10(FDR)")) +
+    coord_cartesian(clip = "off") +
+    xlim(c(-1, 1)) +
+    labs(y = NULL, x = expression("Structure correlation (" * italic(r)[y] * ")"), 
+         title = "B | Covariate structure \ncorrelations (all transcripts)") +
+    theme(legend.position = c(0.05, 0.55), 
+          legend.box = "horizontal",
+          #legend.justification = "center",
+          legend.key.size = unit(0.1, 'cm')
+          #legend.key.height = unit(0.29, "cm"),
+          #legend.key.width = unit(0.30, "cm")
+    )
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supplement_figures_dir, "S13B.covariate_correlations_all_transcripts", .x), width = fig_width, height = fig_height)
+)
+```
+
+### C | Optimal model for subset transcripts
+```{r FigS13c.plot}
+df_results_transcripts %>% 
+    mutate(significant = ifelse(pval == 0.001, "yes", "no")) %>% 
+    ggplot(aes(x = factor(varx*100), y = -log10(pval))) +
+    geom_segment(aes(y = 0, yend = -log10(pval))) +
+    geom_point(aes(size = correl, shape = significant, fill = -log10(pval))) +
+    geom_hline(yintercept = 0, color = "darkgrey") +
+    scale_shape_manual(values = c("yes" = 23, "no" = 21), guide = "none") +
+    scale_fill_gradient(low = "white", high = "#67001F", limits = c(0, 3), guide = "none") +
+    guides(size = guide_legend(title = "X-Y LV correlation", override.aes = list(shape = 21))) +
+    coord_cartesian(clip = "off") +
+    labs(x = "X variance explained (%)", y = "-log10(model p-value)",
+         title = "C | Optimal variance explained \nby model (subset transcripts)"
+    ) +
+    theme(
+        legend.position = c(0.55, 0.75),
+        legend.key.size = unit(0.1, "cm")
+    )
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supplement_figures_dir, "S13C.optimal_model_subset_transcripts", .x), width = fig_width, height = fig_height)
+)
+```
+
+
+# FIG S14: Isoform structures of PTK2B and ARHGAP44 (schizophrenia risk genes) #
+
+### A | PTK2B
+```{r FigS14a.plot}
+## See 05.GRCCA_transcripts/03c.transcript_annotation.R for figure generation
+figS14b
+map(
+    .x = c(".png", ".pdf"),
+    .f = ~ ggsave(paste0(supplement_figures_dir, "S14A.PTK2B", .x), width = 6.5, height = 4.5)
+)
+```
+
+### B | ARHGAP44
+```{r FigS14a.plot}
+## See 05.GRCCA_transcripts/03c.transcript_annotation.R for figure generation
+figS14a
+map(
+    .x = c(".png", ".pdf"),
+    .f = ~ ggsave(paste0(supplement_figures_dir, "S14B.ARHGAP44", .x), width = 6.5, height = 4.5)
+)
+```
+
+
+# FIG S15: GRCCA results are related to single-cell expression gradients implicated in SCZ #
+
+```{r FigS15.prep}
+df_figS15 <- df_lf4_grcca %>% 
+    left_join(df_lake_cell_type) %>% 
+    dplyr::filter((type == "Astro" & cell_type == "astrocyte") |
+                      (type == "Neuro-Ex" & cell_type == "glutamatergic") |
+                      (type == "Neuro-In" & cell_type == "gabaergic")
+    )
+```
+
+```{r FigS15.plot, fig.width = 6}
+df_figS15 %>% 
+    ggplot(aes(x = PEER_4, y = pearsons_r)) +
+    geom_vline(aes(xintercept = 0), color = "gray") +
+    geom_hline(aes(yintercept = 0), color = "gray") +
+    geom_point(aes(color = pearsons_r), size = 0.5) +
+    geom_smooth(color = "black", method = "lm", linewidth = 0.75) +
+    stat_cor(label.sep = "\n", size = 3, 
+             label.y.npc = "top", label.x.npc = "right", hjust = 1, vjust = 1) +
+    facet_wrap(vars(cell_type), scales = "free") +
+    scale_color_gradientn(colors = gene_weight_color_scale, guide = "none") +
+    scale_x_continuous(breaks = c(-2000, 0, 2000)) +
+    labs(x = "Ling et al LF4", y = expression("Structure correlation (" * italic(r)[x] * ")"),
+         title = "GRCCA correlation with SNAP program by cell type")
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supplement_figures_dir, "S15.correlation_with_SNAP", .x), width = 6, height = fig_height)
+)
+```
+
+
+# FIG S16: WGCNA module - phenotype associations determined through traditional module eigengene analysis #
+
+### A | Module eigengene - covariate significant associations
+```{r FigS16a.prep}
+df_figS16a <- df_lm_dx_allPCs %>% 
+    filter(module != "geneM0" & pc == "PC1") %>% 
+    mutate(term = str_replace(term, "MC", "Dim")) %>% 
+    mutate(term = factor(term, levels = c(paste0("Dim", 8:1), names(dx_colors)))) %>%
+    mutate(significant = ifelse(p_value < 0.05, "yes", "no")) %>% 
+    arrange(abs(statistic))
+```
+
+```{r FigS16a.plot, fig.height = 3, fig.width = 6.5}
+df_figS16a %>% 
+    ggplot(aes(x = module, y = term)) +
+    geom_hline(yintercept = 8.5, color = "gray") +
+    geom_point(aes(fill = statistic, size = abs(statistic), color = significant), shape = 21) +
+    scale_fill_gradientn(colors = gene_weight_color_scale, limits = c(-3.3, 3.3)) +
+    scale_color_manual(values = c("yes" = "black", "no" = "grey")) +
+    scale_size_continuous(limits = c(0, 3.3), range = c(0.5, 5), guide = "none") +
+    guides(fill = guide_colorbar(title = "t-statistic", title.position = "top", title.hjust = 0.5),
+           color = guide_legend(title = "P < 0.05", title.position = "top", title.hjust = 0.5)
+    ) +
+    coord_cartesian(clip = "off") +
+    labs(x = NULL, y = NULL,
+         title = "A | Module eigengene - covariate associations"
+    ) +
+    theme(
+        legend.position = "bottom",
+        legend.justification = "center",
+        legend.margin = margin(t = -10),
+        legend.key.height = unit(0.15, "cm"),
+        legend.key.width = unit(0.75, "cm"),
+        axis.text.x = element_text(size = 8.5, angle = 45, hjust = 0.9)
+    )
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supplement_figures_dir, "S16a.module_kme_covar_matrix", .x), width = 6.5, height = 3)
+)
+```
+
+### B | Modules significantly associated with SCZ per module eigengene analysis
+```{r FigS16b.prep}
+df_figS16b <- df_lm_dx_allPCs %>% 
+    dplyr::filter(p_value < 0.05 & term == "SCZ" & pc == "PC1") %>% 
+    unnest(cols = c(data)) %>% 
+    mutate(label = case_when(
+        dx == "SCZ" & p_value < 0.05 & p_adj > 0.05 ~ "*",
+        dx == "SCZ" & p_value < 0.05 & p_adj < 0.05 ~ "**",
+        TRUE ~ ""
+    )
+    )
+```
+
+```{r FigS16b.plot, fig.height = 3, fig.width = 6.5}
+df_figS16b %>% 
+    ggplot(aes(x = pc_resids, y = dx, color = dx, fill = dx)) +
+    geom_point(position = position_jitter(width = 0.1), size = 0.5, alpha = 0.75) +
+    geom_boxplot(alpha = 0.1, outlier.shape = NA) +
+    # geom_text(aes(label = label, x = -Inf), color = "black", size = 6,
+    #           vjust = 0.75, hjust = -0.1, check_overlap = TRUE) +
+    facet_wrap(vars(module), ncol = 3, scales = "free_x") +
+    scale_fill_manual(values = dx_colors) +
+    scale_color_manual(values = dx_colors) +
+    labs(x = "kME (corrected for covariates)", y = NULL,
+         #caption = "* = p < 0.05; ** = FDR < 0.05",
+         title = "B | Module - SCZ associations"
+    ) +
+    theme(legend.position = "none",
+          axis.text.y = element_text(size = 10)
+    )
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supplement_figures_dir, "S16B.sig_SCZ_kME_modules", .x), width = 6.5, height = 3)
+)
+```
+
+
+# FIG S17: WGCNA module enrichment for risk gene lists #
+
+```{r FigS17.prep}
+df_figS17 <- df_mods_risk_gene_hypergeometric %>% 
+    mutate(class = ifelse(str_detect(benchmark_list, "SCZ"), "SCZ", benchmark_list) %>% factor(levels = c("SCZ", "ASD", "BD", "MDD"))) %>% 
+    mutate(benchmark_list = str_remove_all(benchmark_list, "SCZ|\\)|\\(") %>% 
+               str_trim %>% 
+               str_replace(", ", ",\n")
+    ) %>% 
+    filter(module != "geneM0") %>% 
+    mutate(significant = ifelse(p_adj < 0.05, "yes", "no"),
+           very_significant = ifelse(p_adj < 0.001, "***", NA_character_),
+           benchmark_list = ifelse(class != "SCZ", "", benchmark_list),
+           module = factor(module, levels = names(rev(module_colors)))
+    )
+```
+
+```{r FigS17.plot, fig.width = 5, fig.height = 5}
+df_figS17 %>% 
+    ggplot(aes(x = benchmark_list, y = module)) +
+    # Layer 1: fill with variable alpha
+    geom_point(aes(fill = module, size = -log10(p_adj), alpha = -log10(p_adj)), color = "transparent", shape = 21, stroke = 0.75) +
+    # Layer 2: Border only, no alpha applied
+    geom_point(aes(size = -log10(p_adj), color = significant), fill = "transparent", shape = 21, stroke = 0.75) +
+
+    geom_text(aes(label = very_significant), size = 4, color = "black", vjust = 0.75) +
+    facet_wrap(vars(class), scales = "free_x", nrow = 1) +
+    force_panelsizes(cols = c(3,1,1,1)) +
+    scale_alpha_continuous(guide = "none") +
+    scale_fill_manual(values = module_colors, guide = "none") +
+    scale_color_manual(values = c("yes" = "black", "no" = "grey"), guide = "none") +
+    guides(color = guide_legend(title = "FDR < 0.05"),
+           size = guide_legend(title = "-log10(FDR)")
+    ) +
+    coord_cartesian(clip = "off") +
+    labs(x = NULL, y = NULL, 
+         title = "Risk gene list enrichment across WGCNA modules") +
+    theme(legend.margin = margin(l = -15))
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supplement_figures_dir, "S17.risk_gene_module_hypergeometric", .x), width = 5, height = 5)
+)
+```
+
+
+# FIG S18: Functional enrichment of GRCCA overrepresented WGCNA modules #
+
+### A | Hypergeometric overlap of WGCNA modules and significant GRCCA genes
+```{r FigS18a.prep}
+## Identify significant GRCCA genes (FDR < 0.05 & |z| > 2)
+sig_grcca_genes <- df_x_res %>% 
+    dplyr::filter(p_adj < 0.05 & abs(z_score) > 2) %>% 
+    pull(ensembl_gene_id)
+# n = 1211
+
+## Hypergeometric test for significant overlap with modules
+df_grcca_module_hypergeometric <- map_dfr(
+    .x = names(module_colors),
+    .f = ~ f_module_hypergeometric(
+        gene_list = sig_grcca_genes, 
+        gene_list_name = "", 
+        wgcna_module = .x, 
+        gene_universe = ensembl_gene_ids
+    ) %>% 
+        dplyr::select(-gene_list)
+) %>% 
+    mutate(p_adj = p.adjust(p_value, method = "fdr")) %>% 
+    arrange(p_adj) %>% 
+    mutate(module = factor(module, levels = names(module_colors))) %>% 
+    
+    # specify modules to label
+    mutate(module_label = ifelse(p_adj < 0.05, paste0("N = ", overlap_n), ""))
+```
+
+```{r FigS18a.plot, fig.height = 5, fig.width = 2.15}
+f_plot_module_hypergeometric(df_grcca_module_hypergeometric %>% mutate(p_adj = ifelse(p_adj == 0, 10^-5, p_adj)) %>% dplyr::filter(module != "geneM0"),
+                             x_axis = "p-adj",
+                             plot_title = "A | GRCCA significant modules",
+                             #subset_x_labs = TRUE,
+                             include_module_labels = TRUE,
+                             module_text_size = 3,
+                             legend_position = "none",
+                             p_value_threshold = 0.05,
+                             include_threshold_label = TRUE
+)
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supplement_figures_dir, "S18A.GRCCA_module_hypergeometric", .x), width = 2.15, height = 5)
+)
+```
+
+### B | Direction of significant genes in top modules
+```{r FigS18b.prep}
+## Identify significant modules
+sig_modules <- df_grcca_module_hypergeometric %>% dplyr::filter(module != "geneM0" & p_adj < 0.05) %>% pull(module) %>% sort()
+
+## Identify panel sizes (number of significant genes in each module)
+panel_widths <- df_x_res %>% 
+    dplyr::filter(module %in% sig_modules & ensembl_gene_id %in% sig_grcca_genes) %>% 
+    dplyr::count(module) %>% 
+    pull(n)
+```
+
+```{r FigS18b.plot, fig.height = 5, fig.width = 2.15}
+df_x_res %>% 
+    dplyr::filter(module %in% sig_modules & ensembl_gene_id %in% sig_grcca_genes) %>% 
+    mutate(weight = ifelse(significant == 1, weight, 0)) %>% 
+    
+    ggplot(aes(x = reorder_within(ensembl_gene_id, within = module, by = pearsons_r), y = pearsons_r)) +
+    geom_col(aes(fill = module, alpha = abs(pearsons_r))) +
+    facet_wrap(vars(module), ncol = 1, scales = "free_y") +
+    force_panelsizes(rows = panel_widths) +
+    scale_fill_manual(values = module_colors) +
+    scale_alpha_continuous(range = c(0.3, 1)) +
+    labs(title = "B | Significant module genes",
+         x = "Gene", y = expression("Structure correlation (" * italic(r)[x] * ")")) +
+    guides(fill = guide_legend(nrow = 2)) +
+    coord_flip() +
+    theme(axis.text.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          strip.text = element_blank(),
+          legend.position = "none",
+          panel.spacing = unit(0.3, "lines")
+    )
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supplement_figures_dir, "S18B.sig_module_direction", .x), width = 2.15, height = 5)
+)
+
+```
+
+### C | GO BP enrichments of significant modules
+```{r FigS18c.prep}
+# Filter for GRCCA modules of interest & take top 5 pathways for each
+df_figS18c <- df_mods_go %>% 
+    dplyr::filter(module %in% sig_modules) %>% 
+    group_by(module) %>% 
+    top_n(5, wt = -log10(pvalue)) %>% 
+    mutate(Description = str_wrap(Description, width = 23.5))
+```
+
+```{r FigS18c.bubbleplot, fig.height = 5, fig.width = 2.15}
+df_figS18c %>% 
+    ggplot(aes(x = p.adjust, y = reorder_within(Description, -p.adjust, module))) +
+    geom_point(aes(size = RichFactor, fill = module), shape = 21) +
+    facet_wrap(vars(module), scales = "free_y", ncol = 1) +
+    scale_fill_manual(values = module_colors, guide = "none") +
+    scale_y_reordered() +
+    scale_x_reverse(breaks = c(0.00005, 0.00)) +
+    scale_size_continuous(range = c(1, 4)) +
+    coord_cartesian(clip = "off") +
+    labs(x = "Enrichment FDR", y = NULL,
+         title = "C | Module enrichments") +
+    theme(
+        legend.position = c(-1.6, 1.05),
+        legend.key.size = unit(0.2, "cm"),
+        axis.text = element_text(size = 8.5)
+    )
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supplement_figures_dir, "S18C.sig_GRCCA_module_enrichments", .x), width = 2.15, height = 5)
+)
+```
+
+
+# FIG S19: Developmental expression trajectories of GRCCA genes
+
+```{r FigS19.prep}
 ## Calculate the mean expression for each decile of GRCCA results across development
-df_figS18 <- df_psychencode_grcca %>% #dplyr::filter(regioncode == "MFC") %>% 
+df_figS19 <- df_psychencode_grcca %>% #dplyr::filter(regioncode == "MFC") %>% 
     group_by(decile, window) %>% 
     summarise(median_expression = median(dev_expression),
               sd_expression = sd(dev_expression)
@@ -1817,8 +1839,8 @@ names(psychencode_windows) = 1:9
 decile_colors <- colorRampPalette(c(gene_weight_color_scale[5], "gray", gene_weight_color_scale[95]))(10) %>% rev
 ```
 
-```{r FigS18, fig.height = 3, fig.width = 4}
-df_figS18 %>% 
+```{r FigS19, fig.height = 3, fig.width = 4}
+df_figS19 %>% 
     ggplot(aes(x = window, y = median_expression, color = decile)) +
     geom_vline(xintercept = 5, color = "gray") +
     geom_smooth(method = "loess", se = FALSE) +
@@ -1834,7 +1856,7 @@ df_figS18 %>%
     )
 map(
   .x = c(".png", ".pdf"),
-  .f = ~ ggsave(paste0(supplement_figures_dir, "S18.developmental_trajectory", .x), width = 4, height = 3)
+  .f = ~ ggsave(paste0(supplement_figures_dir, "S19.developmental_trajectory", .x), width = 4, height = 3)
 )
 ```
 
@@ -2143,6 +2165,185 @@ l_module_wordclouds <- map(
 ```
 
 GO biological process pathway enrichments for each module. The top 10 words per module are shown, and the size indicates the number of times the word appears in a GO term significantly associated with that module. Words are colored by respective module.
+
+## FIG S9: Compare current DEGs to Akula et al 2021 DEGs #
+
+```{r FigS9.prep}
+## Combine current study results with Akula 2021
+df_de_akula_res <- df_de_res %>% 
+    mutate(analysis = "current", .before = 1) %>% 
+    
+    bind_rows(df_akula_res %>% 
+                  mutate(analysis = "akula") %>% 
+                  dplyr::rename("gene_symbol" = "hgnc_symbol")
+    )
+```
+
+### A | Venn diagram of significant DEG overlap
+
+```{r FigS9a.prep}
+## Venn diagram (overlap with Nirmala's results)
+my_degs <- df_de_res %>% dplyr::filter(pvalue < 0.05) %>% pull(ensembl_gene_id)
+length(my_degs) # N = 1690
+
+akula_degs <- df_akula_res %>% 
+    dplyr::filter(pvalue < 0.05) %>% 
+    pull(ensembl_gene_id)
+length(akula_degs) # N = 1373
+
+sig_grcca_genes <- df_x_res %>% 
+    dplyr::filter(p_adj < 0.05 & abs(z_score) > 2) %>% 
+    pull(ensembl_gene_id)
+length(sig_grcca_genes) # N = 1211
+
+# Akula DEGs vs my DEGs
+hypergeometric_overlap <- f_hypergeometric(my_degs, akula_degs, gene_universe = ensembl_gene_ids)
+length(hypergeometric_overlap$overlap_genes) # N = 433; P = 5.2*10^-152; OR = 6.7
+
+# GRCCA vs my DEGs
+hypergeometric_overlap <- f_hypergeometric(my_degs, sig_grcca_genes, gene_universe = ensembl_gene_ids)
+length(hypergeometric_overlap$overlap_genes) # N = 211; p < 0.0001; OR = 2.30
+
+# GRCCA vs Akula DEGs
+hypergeometric_overlap <- f_hypergeometric(akula_degs, sig_grcca_genes, gene_universe = ensembl_gene_ids)
+length(hypergeometric_overlap$overlap_genes) # N = 285; p < 0.0001; OR = 5.21
+
+# Combine the data into a named list for ggvenn
+FigS9a_data <- list(
+  `Current study DEGs` = my_degs,
+  `Akula et al 2021 DEGs` = akula_degs,
+  `Significant GRCCA genes` = sig_grcca_genes
+)
+```
+
+```{r FigS9a.plot}
+ggvenn(
+    FigS9a_data, 
+    fill_color = c("#E0E0E0", "#E0E0E0", "#E0E0E0"),
+    stroke_size = 0.75,
+    text_size = 3,
+    set_name_size = 4,
+    show_percentage = FALSE
+) +
+    coord_fixed(clip = "off") +
+    theme_void() +
+    theme(
+        text = element_text(size = 8)
+    )
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supplement_figures_dir, "S9A.DEG_GRCCA_venn_diagram", .x), width = fig_width, height = fig_height)
+)
+```
+
+
+### B | Correlation plot of L2FC
+
+```{r FigS9b.prep}
+## Create df for plot
+df_figS9b <- df_de_akula_res %>% 
+    
+    # pivot wider to plot
+    pivot_wider(id_cols = c(ensembl_gene_id, gene_symbol), names_from = analysis, values_from = stat) %>% 
+    dplyr::filter(!is.na(akula)) %>% 
+    
+    # normalize values to compare across analyses
+    #mutate(akula = scale(akula), current = scale(current)) %>% 
+    
+    # add gene labels
+    mutate(label = ifelse(abs(current) > 1.5 & abs(akula) > 1.5, gene_symbol, "")) %>% 
+    
+    # arrange to plot
+    arrange(-abs(current))
+
+```
+
+```{r FigS9b.stats}
+n_perm <- 10000
+df_de_akula_cor_perm <- tibble()
+set.seed(0206)
+for (i in 1:n_perm) {
+    
+    if (i %% 100 == 0) {print(paste0("Running permutation ", i))}
+    
+    # Permute LFC within module
+    df_tmp <- df_figS9b %>% 
+        left_join(df_modules_filt) %>% 
+        group_by(module) %>% 
+        mutate(permuted_lfc = sample(current, replace = FALSE))
+    
+    # Calculate correlation between permuted data and Nirmala's LFC
+    test <- cor.test(df_tmp$permuted_lfc, df_tmp$akula)
+    correlation <- test$estimate
+    p_value <- test$p.value
+
+    # Append to tibble
+    df_de_akula_cor_perm <- df_de_akula_cor_perm %>% 
+        bind_rows(
+            tibble(
+                perm = i,
+                correlation = correlation,
+                p_value = p_value
+            )
+        )
+    
+}
+
+## Calculate permutation p-values
+de_akula_perm_p <- df_de_akula_cor_perm %>% 
+    mutate(obs_corr = cor.test(df_figS9b$current, df_figS9b$akula)$estimate) %>%
+    summarise(
+        perm_p = (sum(abs(correlation) >= abs(obs_corr)) + 1) / (n_perm + 1)
+    )
+```
+
+```{r FigS9b.plot}
+df_figS9b %>% 
+    ggplot(aes(x = akula, y = current)) +
+    geom_point(aes(color = akula), size = 0.75) +
+    geom_hline(aes(yintercept = 0), color = "grey") +
+    geom_vline(aes(xintercept = 0), color = "grey") +
+    geom_smooth(method = "lm", color = "black", linewidth = 0.75) +
+    geom_abline(lty = 2) +
+    #geom_text(x = 2.1, y = 2.6, label = "y = x", check_overlap = TRUE) +
+    geom_text_repel(aes(label = label), min.segment.length = 0, max.overlaps = 15, size = 2.5) +
+    stat_cor(label.sep = "\n", vjust = 1, size = 3.5) +
+    #stat_regline_equation(label.y.npc = "top", vjust = 3) +
+    scale_color_gradientn(colors = rev(brewer.rdbu(100)), limits = c(-6.2, 6.2), guide = "none") +
+    #scale_color_manual(values = c("transparent", "black")) +
+    #guides(color = guide_legend(title = "FDR < 0.05", title.vjust = -1.5)) +
+    labs(x = "Akula DEGs t-statistic", y = "Current DEGs t-statistic", 
+         title = "B | Correlation between \nDGE analysis results") +
+    theme(legend.position = c(0.05, 0.7),
+          legend.spacing.x = unit(0.1, "mm"),
+          legend.background = element_blank(),
+          legend.box.background = element_rect(colour = "black")
+    )
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supplement_figures_dir, "S9B.DEG_correlation", .x), width = fig_width, height = fig_height)
+)
+```
+
+### C | Significant DEG overlap with significant GRCCA genes
+
+```{r FigS9c.prep}
+sig_grcca_genes <- df_x_res %>% 
+    dplyr::filter(p_adj < 0.05 & abs(z_score) > 2) %>% 
+    pull(ensembl_gene_id)
+length(sig_grcca_genes) # N = 1211
+length(my_degs) # N = 1690
+length(akula_degs) # N = 1373
+
+# GRCCA vs my DEGs
+hypergeometric_overlap <- f_hypergeometric(my_degs, sig_grcca_genes, gene_universe = ensembl_gene_ids)
+length(hypergeometric_overlap$overlap_genes) # N = 211; p < 0.0001
+
+# GRCCA vs Akula DEGs
+hypergeometric_overlap <- f_hypergeometric(akula_degs, sig_grcca_genes, gene_universe = ensembl_gene_ids)
+length(hypergeometric_overlap$overlap_genes) # N = 285; p < 0.0001
+
+```
 
 
 ## Fig SXX: Cell-type enrichment of DEGs

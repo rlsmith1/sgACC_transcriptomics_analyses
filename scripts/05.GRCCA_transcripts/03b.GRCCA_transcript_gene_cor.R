@@ -1,0 +1,75 @@
+
+############################################################################################
+
+# Determine the relationship between GRCCA transcript- and gene-level structure correlations
+
+############################################################################################
+
+
+## Set paths and load data
+base_dir <- "~/Documents/PhD/projects/sgacc_wgcna_grcca/"
+figures_dir <- paste0(base_dir, "outputs/figures/Fig5_GRCCAtranscriptRes/")
+tables_dir <- paste0(base_dir, "outputs/tables/")
+analysis_objects_dir <- paste0(base_dir, "outputs/objects/")
+
+source(paste0(base_dir, "/scripts/setup.R"))
+
+
+## Combine GRCCA gene and transcript results
+df_grcca_tx_gene <- df_x_res_transcripts %>% 
+    #filter(!is.na(ensembl_gene_id)) %>% 
+    group_by(ensembl_gene_id) %>% 
+    summarise(pearsons_r = max(pearsons_r)) %>% 
+    #summarise(pearsons_r = ifelse(pearsons_r < 0, min(pearsons_r), max(pearsons_r))) %>% 
+    dplyr::rename("transcript_res" = "pearsons_r") %>% 
+    
+    # add gene level results
+    left_join(df_x_res_genes %>% 
+                  dplyr::select(module, ensembl_gene_id, gene_symbol, pearsons_r) %>% 
+                  dplyr::rename("gene_res" = "pearsons_r")
+    )
+
+## Calculate the observed correlation between rx and DEG t stat
+cor.test(df_grcca_tx_gene$transcript_res, df_grcca_tx_gene$gene_res)
+
+
+## Run permutation testing (resampling within module) to determine the significance of the correlation
+n_perm <- 10000
+df_grcca_tx_gene_cor_perm <- tibble()
+set.seed(0206)
+for (i in 1:n_perm) {
+    
+    if (i %% 100 == 0) {print(paste0("Running permutation ", i))}
+    
+    # Permute transcript rx within module
+    df_tmp <- df_grcca_tx_gene %>% 
+        group_by(module) %>% 
+        mutate(permuted_r = sample(transcript_res, replace = FALSE))
+    
+    # Calculate correlation between permuted data and Nirmala's LFC
+    test <- cor.test(df_tmp$permuted_r, df_tmp$gene_res)
+    correlation <- test$estimate
+    p_value <- test$p.value
+    
+    # Append to tibble
+    df_grcca_tx_gene_cor_perm <- df_grcca_tx_gene_cor_perm %>% 
+        bind_rows(
+            tibble(
+                perm = i,
+                correlation = correlation,
+                p_value = p_value
+            )
+        )
+    
+}
+
+
+## Calculate permutation p-values
+grcca_tx_gene_perm_p <- df_grcca_tx_gene_cor_perm %>% 
+    mutate(obs_corr = cor.test(df_grcca_tx_gene$transcript_res, df_grcca_tx_gene$gene_res)$estimate) %>%
+    summarise(
+        perm_p = (sum(abs(correlation) >= abs(obs_corr)) + 1) / (n_perm + 1)
+    )
+
+
+

@@ -35,7 +35,6 @@ df_covariates_mca <- df_covariates %>%
 
 ## Convert to matrix
 n_mcs <- 8
-paste0("MC", 1:n_mcs)
 m_covariates <- df_covariates_mca %>% 
     dplyr::filter(dx %in% c("SCZ", "Control")) %>% # SCZ vs controls only
     mutate(dx = factor(dx, levels = c("Control", "SCZ"))) %>% 

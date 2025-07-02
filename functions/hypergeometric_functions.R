@@ -1,4 +1,58 @@
 
+
+# Calculate hypergeometric odds ratio -------------------------------------
+
+#=====================================================================================================================#
+
+### GOAL: Calculate the hypergeometric overlap odds ratio (for use in hypergeometric function, below)
+
+### INPUTS ###
+
+## q = Overlap size minus 1
+## m = Size of Set 1
+## n = Complement of Set 1 size (N - m)
+## k = Size of Set 2
+
+### OUTPUTS ###
+
+## odds_ratio = likelihood of overlap, given the respective population sizes
+
+#=====================================================================================================================#
+
+
+calculate_odds_ratio <- function(q, m, n, k) {
+    
+    # Total population size
+    N <- m + n  # Since n = N - m by definition
+    
+    # Check for invalid inputs
+    if (q + 1 > m || q + 1 > k || q + 1 > N) {
+        stop("Invalid values: Overlap q + 1 cannot exceed set or population sizes.")
+    }
+    if (m > N || k > N) {
+        stop("Invalid values: Set sizes cannot exceed population size.")
+    }
+    
+    # 2x2 table components
+    a <- q
+    b <- k - q
+    c <- m - q
+    d <- N - (a + b + c)
+    
+    # Add pseudocount to avoid zero division
+    a <- a + 0.5
+    b <- b + 0.5
+    c <- c + 0.5
+    d <- d + 0.5
+    
+    # Odds ratio formula
+    odds_ratio <- (a * d) / (b * c)
+    return(odds_ratio)
+    
+}
+
+
+
 # General hypergeometric function -----------------------------------------
 
 #=====================================================================================================================#
@@ -15,6 +69,7 @@
 
 ## overlap_genes = list of genes that were in both gene_list1 and gene_list2
 ## p_value = hypergeometric p-value (significant of overlap given total pool of genes)
+## odds_ratio = likelihood of overlap, given the respective population sizes
 
 #=====================================================================================================================#
 
@@ -27,15 +82,31 @@ f_hypergeometric <- function(gene_list1, gene_list2, gene_universe) {
     # Identify the overlap between the published gene list (including only those in our universe) and the gene list of interest
     overlap_genes <- intersect(gene_list1_in_universe, gene_list2_in_universe)
     
+    # Determine variables for hypergeometric test
+    q <- length(overlap_genes)
+    m <- length(gene_list2_in_universe)
+    n <- length(gene_universe) - m
+    k <- length(gene_list1_in_universe)
+    
     # Run hypergeometric test
-    phyper <- 1 - phyper(q = length(overlap_genes), 
-                         m = length(gene_list2_in_universe), 
-                         n = length(gene_universe) - length(gene_list2_in_universe), 
-                         k = length(gene_list1_in_universe)
-    ) 
+    log_pval <- phyper(q = q - 1, 
+                      m = m, 
+                      n = n, 
+                      k = k,
+                      lower.tail = FALSE,
+                      log.p = TRUE
+    )
+    p_value <- exp(log_pval)
+    
+    # Calculate hypergeometric odds ratio
+    odds_ratio <- calculate_odds_ratio(q, m, n, k)
     
     # Return a list of common genes and the hypergeometric p-value
-    return(list("overlap_genes" = overlap_genes, "p_value" = phyper))
+    return(
+        list("overlap_genes" = overlap_genes, 
+             "p_value" = p_value, 
+             "odds_ratio" = odds_ratio)
+    )
     
 }
 
@@ -83,6 +154,7 @@ f_module_hypergeometric <- function(gene_list, gene_list_name, wgcna_module, gen
         gene_list = gene_list_name,
         module = wgcna_module,
         p_value = hypergeometric_res$p_value,
+        odds_ratio = hypergeometric_res$odds_ratio,
         total_n = length(module_genes),
         overlap_n = length(hypergeometric_res$overlap_genes)
     )
@@ -118,6 +190,7 @@ f_module_hypergeometric_transcript <- function(transcript_list, transcript_list_
         gene_list = transcript_list_name,
         module = wgcna_module,
         p_value = hypergeometric_res$p_value,
+        odds_ratio = hypergeometric_res$odds_ratio,
         total_n = length(module_transcripts),
         overlap_n = length(hypergeometric_res$overlap_genes)
     )

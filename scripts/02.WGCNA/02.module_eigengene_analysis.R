@@ -34,12 +34,18 @@ df_covariates_mca <- df_covariates_numeric %>%
     ) %>% 
     
     # remove drug covariates (since we have the MCs)
-    dplyr::select(-any_of(drug_covariates))
+    dplyr::select(-any_of(drug_covariates)) %>% 
+    
+    # bring sample to column 1
+    dplyr::select(sample, everything())
 
 
 # Run PCA on each module -------------------------------------------------
 
+
+## Run PCA on samples x gene expression matrix for each module
 df_mods_pca <- df_modules_filt %>% 
+    dplyr::select(module, ensembl_gene_id) %>% 
     
     # combine with sample expression information
     left_join(df_vsd_regress %>% 
@@ -47,56 +53,58 @@ df_mods_pca <- df_modules_filt %>%
               by = join_by(ensembl_gene_id)
     ) %>% 
     
-    # create gene x sample expression matrix for each module
-    pivot_wider(id_cols = c(ensembl_gene_id, module), 
-                names_from = sample, 
-                values_from = resids) %>% 
+    # create sample x gene expression matrix for each module
     group_by(module) %>% 
     nest() %>% 
+    mutate(
+        data = map(
+            .x = data,
+            .f = ~ .x %>% 
+                pivot_wider(id_cols = sample, 
+                            names_from = ensembl_gene_id, 
+                            values_from = resids)
+        )
+    ) %>% 
     
     # run PCA on gene x sample expression matrix
-    mutate(pca = map(.x = data,
-                     .f = ~ .x %>% 
-                         as.data.frame %>%
-                         column_to_rownames("ensembl_gene_id") %>% 
-                         prcomp()
-    )) %>% 
+    mutate(pca = map(
+        .x = data,
+        .f = ~ .x %>% 
+            as.data.frame %>%
+            column_to_rownames("sample") %>% 
+            prcomp(center = TRUE, scale = TRUE)
+    )
+    )
+
+
+## Extract sample scores in PC space
+df_mods_pca_covariates <- df_mods_pca %>% 
     
-    # combine PCA results
-    mutate(sample_pcs = map(.x = pca,
-                            .f = ~.x$rotation %>% 
-                                as.data.frame %>% 
-                                rownames_to_column("sample") %>% 
-                                as_tibble() %>% 
-                                clean_names() %>% 
-                                pivot_longer(matches("*[0-9]"), 
-                                             names_to = "pc", 
-                                             values_to = "pc_score") %>% 
-                                
-                                left_join(
-                                    
-                                    summary(.x) %>% 
-                                        .$importance %>% 
-                                        as.data.frame %>% 
-                                        rownames_to_column("metric") %>% 
-                                        as_tibble() %>% 
-                                        pivot_longer(2:ncol(.), 
-                                                     values_to = "value", 
-                                                     names_to = "pc") %>% 
-                                        mutate(pc = tolower(pc)) %>% 
-                                        pivot_wider(id_cols = pc, 
-                                                    names_from = metric, 
-                                                    values_from = value) %>% 
-                                        clean_names(),
-                                    by = join_by(pc)
-                                    
-                                ) %>% 
-                                dplyr::filter(proportion_of_variance > 0.01)
+    # extract PC scores
+    mutate(sample_pcs = map(
+        .x = pca,
+        .f = ~.x$x %>% 
+            as.data.frame %>% 
+            rownames_to_column("sample") %>% 
+            as_tibble() %>% 
+            pivot_longer(matches("PC"), names_to = "PC", values_to = "score") %>% 
+        
+            # combine with PC variance explained
+            left_join(
+                summary(.x) %>% 
+                    .$importance %>% 
+                    t %>% as.data.frame %>% 
+                    rownames_to_column("PC") %>% 
+                    as_tibble() %>%
+                    dplyr::rename("proportion_of_variance" = "Proportion of Variance") %>% 
+                    dplyr::select(PC, proportion_of_variance),
+                by = join_by(PC)
+                
+            )
     )
     ) %>% 
-    arrange(module) %>% 
     unnest(cols = c(sample_pcs)) %>% 
-    dplyr::select(module, sample, pc, proportion_of_variance, pc_score) %>% 
+    dplyr::select(module, sample, PC, proportion_of_variance, score) %>% 
     
     # combine sample PC scores with sample covariate information
     left_join(df_covariates_mca %>% 
@@ -107,31 +115,30 @@ df_mods_pca <- df_modules_filt %>%
     )
 
 
-# Extract module eigengenes -----------------------------------------------
+# Identify module-dx relationships across all module PCs ---------------------------------------------------------------------
 
-df_kme <- df_mods_pca %>% 
-    dplyr::filter(pc == "pc1") %>% 
-    pivot_wider(id_cols = c(module, sample, pc_score), 
-                names_from = covariate, 
-                values_from = covariate_val) %>% 
-    dplyr::rename("kme" = "pc_score", "value" = "dx") %>% 
-    left_join(enframe(dx_group, name = "dx"), by = join_by(value)) %>% 
-    mutate(dx = factor(dx, levels = names(dx_colors))) %>% 
-    dplyr::select(module, sample, kme, dx, everything())
-
-
-# Identify significant modules using linear regression --------------------
-
-## For each module, run a linear model on module eigengene with drug MCs as covariates
-df_lm_dx <- df_kme %>% 
-    group_by(module) %>% 
+df_lm_dx_allPCs <- df_mods_pca_covariates %>% 
+    group_by(module, PC, proportion_of_variance) %>% 
+    filter(covariate %in% c("dx", paste0("MC", 1:8))) %>% 
+    pivot_wider(id_cols = c(module, PC, sample, proportion_of_variance, score), names_from = covariate, values_from = covariate_val) %>% 
+    
+    # convert dx to factor variable for regression analyssi
+    mutate(dx = case_when(
+        dx == 0 ~"BD",
+        dx == 1 ~ "Control",
+        dx == 2 ~ "MDD",
+        dx == 3 ~ "SCZ"
+    ) %>% factor(levels = names(dx_colors))
+    ) %>% 
     nest() %>% 
+    
+    # run linear models on each PC of each module to identify all dx associations
     mutate(
         
         # run linear models and extract results
         lm = map(
             .x = data,
-            .f = ~ lm(kme ~ dx + MC1 + MC2 + MC3 + MC4 + MC5 + MC6 + MC7 + MC8, data = .x)
+            .f = ~ lm(score ~ dx + MC1 + MC2 + MC3 + MC4 + MC5 + MC6 + MC7 + MC8, data = .x)
         ),
         lm_sum = map(
             .x = lm,
@@ -146,41 +153,80 @@ df_lm_dx <- df_kme %>%
         data = map(
             .x = data,
             .f = ~ .x %>% 
-                mutate(kme_resids = lm(kme ~ MC1 + MC2 + MC3 + MC4 + MC5 + MC6 + MC7 + MC8) %>% residuals + median(kme))
+                mutate(pc_resids = lm(score ~ MC1 + MC2 + MC3 + MC4 + MC5 + MC6 + MC7 + MC8) %>% residuals + median(score))
         )
         
     ) %>% 
     unnest(cols = c(lm_res)) %>% 
     clean_names %>% 
     dplyr::filter(term != "(Intercept)") %>% 
-    group_by(term) %>% 
+    group_by(module, term) %>% 
     mutate(p_adj = p.adjust(p_value, method = "fdr"),
            term = str_remove(term, "dx")
     ) %>% 
+    #group_by(term) %>% 
+    #mutate(p_adj2 = p.adjust(p_value, method = "fdr")) %>% 
     dplyr::select(-c(lm, lm_sum))
 
-## Identify significant associations
-df_lm_dx %>% 
-    dplyr::filter(p_value < 0.05)
 
-## Identify modules significantly associated with SCZ specifically
-sig_modules <- df_lm_dx %>% 
-    dplyr::filter(p_value < 0.05 & term == "SCZ") %>% 
-    pull(module)
+df_lm_dx_allPCs %>% 
+    filter(p_adj < 0.05 & proportion_of_variance >= 0.02 & module != "geneM0") %>% 
+    print(n = nrow(.))
+
+
+
+# geneM20? ----------------------------------------------------------------
+
+df_mods_pca %>% 
+    filter(module == "geneM20") %>% 
+    pull(pca) %>% .[[1]] %>% .$rotation %>% as.data.frame %>% 
+    rownames_to_column("ensembl_gene_id") %>% 
+    as_tibble() %>% 
+    left_join(df_ensembl_to_symbol) %>% 
+    dplyr::select(gene_symbol, ensembl_gene_id, PC4) %>% 
+    
+    ggplot(aes(x = PC4, y = reorder(gene_symbol, PC4))) +
+    geom_col()
+
+df_modules_filt %>% filter(module == "geneM20" & ensembl_gene_id %in% benchmarking_lists[["SCZ (common, broad)"]]) %>% left_join(df_ensembl_to_symbol)
+
+
+# Extract module eigengenes -----------------------------------------------
+
+
+df_kme <- df_lm_dx_allPCs %>% 
+    filter(pc == "PC1")
+
+
+# df_kme <- df_mods_pca_covariates %>%
+#     dplyr::filter(PC == "PC1") %>%
+#     pivot_wider(id_cols = c(module, sample, score),
+#                 names_from = covariate,
+#                 values_from = covariate_val) %>%
+#     dplyr::rename("kme" = "score", "value" = "dx") %>%
+#     left_join(enframe(dx_group, name = "dx"), by = join_by(value)) %>%
+#     mutate(dx = factor(dx, levels = names(dx_colors))) %>%
+#     dplyr::select(module, sample, kme, dx, everything())
 
 
 
 # Save results for plotting -----------------------------------------------
 
 
+## Remove data to save
+df_lm_dx_allPCs <- df_lm_dx_allPCs %>% dplyr::select(-data)
+
 # Figures
-save(df_lm_dx,
+save(df_mods_pca_covariates, df_lm_dx_allPCs,
+     file = paste0(analysis_objects_dir, "module_pca_res.RDS")
+)
+save(df_kme,
      file = paste0(analysis_objects_dir, "kME_analysis_res.RDS")
 )
 
 # Downstream analyses
-save(df_lm_dx,
-     file = paste0(base_dir, "objects/kME_analysis_res.RDS")
-)
+# save(df_lm_dx,
+#      file = paste0(base_dir, "objects/kME_analysis_res.RDS")
+# )
 
 

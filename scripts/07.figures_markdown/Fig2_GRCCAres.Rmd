@@ -11,9 +11,9 @@ knitr::opts_chunk$set(fig.width = 2.5, fig.height = 2, collapse = TRUE, warning 
 base_dir <- "~/Documents/PhD/projects/sgacc_wgcna_grcca/"
 figures_dir <- paste0(base_dir, "outputs/figures/Fig2_GRCCAres/")
 tables_dir <- paste0(base_dir, "outputs/tables/")
-analysis_objects_dir <- paste0(base_dir, "outputs/objects/Fig2_GRCCAres/")
+analysis_objects_dir <- paste0(base_dir, "outputs/objects/")
 
-source(paste0(base_dir, "scripts/full_analysis_scripts/scripts/load_WGCNA_res.R"))
+source(paste0(base_dir, "scripts/load_WGCNA_res.R"))
 
 ## Load data objects for plots
 objects <- list.files(analysis_objects_dir)
@@ -22,9 +22,6 @@ for (obj in objects){
   print(paste0("loading ", obj, "...."))
   load(paste0(analysis_objects_dir, obj))
 }
-
-## Load DE res (to compare to GRCCA)
-load(paste0(base_dir, "objects/DE_results.RDS")) # df_de_res
 ```
 
 ### A | Model results

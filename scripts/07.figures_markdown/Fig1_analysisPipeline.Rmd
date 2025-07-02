@@ -9,12 +9,9 @@ knitr::opts_chunk$set(fig.width = 2.5, fig.height = 2, collapse = TRUE, warning 
 
 ## Set paths and load data
 base_dir <- "~/Documents/PhD/projects/sgacc_wgcna_grcca/"
-figures_dir <- paste0(base_dir, "outputs/updated_figures/figures/Fig1_analysisPipeline/")
+figures_dir <- paste0(base_dir, "outputs/figures/Fig1_analysisPipeline/")
 
 source(paste0(base_dir, "scripts/full_analysis_scripts/scripts/load_WGCNA_res.R"))
-
-## Load DE data
-load(paste0(base_dir, "outputs/updated_figures/objects/Fig2_DGEres/DE_results.RDS")) # df_de_res
 ```
 
 ## 1. DE box plot

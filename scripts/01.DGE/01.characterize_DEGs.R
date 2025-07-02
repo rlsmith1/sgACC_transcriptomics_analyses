@@ -13,13 +13,15 @@ figures_dir <- paste0(base_dir, "outputs/figures/Fig2_DGEres/")
 analysis_objects_dir <- paste0(base_dir, "outputs/objects/")
 
 source(paste0(base_dir, "scripts/load_genes.R"))
-load(paste0(base_dir, "objects/DE_results.RDS")) # df_de_res (generated in A.DGE_analysis.R)
+load(paste0(base_dir, "objects/DE_results.Rdata")) # df_limma_res (generated in 00.DGE_analysis_Limma_DESeq2.R)
 
 
-### Get ranked gene list ###
-my_degs_ranked <- df_de_res %>% 
-    arrange(-stat) %>% 
-    dplyr::select(ensembl_gene_id, log2fold_change) %>% 
+### Get ranked gene list ### (switching to limma!)
+my_degs_ranked <- df_limma_res %>% 
+    arrange(-log_fc) %>%
+    dplyr::select(ensembl_gene_id, log_fc) %>%
+    # arrange(-t) %>%
+    # dplyr::select(ensembl_gene_id, t) %>% 
     deframe
 
 

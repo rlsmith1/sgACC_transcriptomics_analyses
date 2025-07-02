@@ -24,6 +24,8 @@ library(ggh4x)
 library(ggpubr)
 library(ggwordcloud)
 library(ggvenn)
+library(ggarchery)
+library(GGally)
 library(cowplot)
 library(pheatmap)
 library(RColorBrewer)
@@ -39,6 +41,7 @@ library(org.Hs.eg.db)
 library(GO.db)
 library(EnsDb.Hsapiens.v79) # hg38
 library(ensembldb)
+library(gtexr)
 
 library(rhdf5)
 
@@ -50,12 +53,12 @@ select <- dplyr::select
 count <- dplyr::count
 
 
-# Load data ----add_count_()# Load data ---------------------------------------------------------------
+# Load data ---------------------------------------------------------------
 
 
 ### CURRENT STUDY DATA ###
 
-load(paste0(base_dir, "objects/14Nov2023_covariates.Rdata")) # df_covariates, df_covariates_numeric (generated in clean_covariates.R)
+load(paste0(base_dir, "objects/22Jan2025_covariates.Rdata")) # df_covariates, df_covariates_numeric (generated in clean_covariates.R)
 load(paste0(base_dir, "objects/drug_MCA_results.Rdata")) # df_ind_loadings, df_var_loadings
 
 
@@ -148,14 +151,21 @@ benchmarking_lists <- list(
 
 # Group covariates by type ------------------------------------------------
 
-technical_covariates <- c("source", "pmi", "ph", "pmi_confidence", "max_rin", "max_rine", "mapped_percent", "five_prime_three_prime_bias",
-                          "rna_extraction_batch", "library_batch", "gc_percent")
-biological_covariates <- c("age_death", "sex_at_birth", "race", "marital_status", "education", "manner_death", "suicide", "brain_weight",
-                           "height", "weight", "bmi")
-drug_covariates <- c("smoker", "nicotine_cotinine", "alcohol", "sedative_hypnotic_anxiolitics", "opioids", "cannabinoids",
-                     "major_stimulants_cocaine_included", "minor_stimulants", "anticholinergics", "antidepressants",
-                     "anti_epileptics", "anti_histamines", "antipsychotics", "mood_stabilizers", "non_psychiatric",
-                     "other_psychotropic_drug", "benzos", "beta_blockers")
+
+technical_covariates <- c(
+    "mapped_percent", "gc_percent", "five_prime_three_prime_bias", "rin_acsg", "rna_extraction_batch",
+    "library_batch", "pmi", "pmi_confidence", "source", "ph" # "max_rin", "max_rine"
+)
+biological_covariates <- c(
+    "age_death", "sex_at_birth", "race", "bmi", "height", "weight",
+    "marital_status", "manner_death", "education", "suicide", "brain_weight"
+)
+drug_covariates <- c(
+    "smoker", "nicotine_cotinine", "alcohol", "opioids", "cannabinoids", "beta_blockers",
+    "major_stimulants_cocaine_included", "minor_stimulants", "anticholinergics", "antidepressants",
+    "anti_epileptics", "anti_histamines", "antipsychotics", "mood_stabilizers", "sedative_hypnotic_anxiolitics", "benzos",
+    "other_psychotropic_drug", "non_psychiatric"
+)
 
 
 # Source functions --------------------------------------------------------
