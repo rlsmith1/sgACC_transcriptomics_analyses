@@ -7,17 +7,20 @@
 
 # IN LOCAL SPACE to sync to cluster:
 cd /Users/smithral/Documents/PhD/projects/sgacc_wgcna_grcca/RCCA_toolkit/GENES/
-rsync -r 08Mar2024_GENES_qSVAgeSexRaceGC_sft3_minSize40_cutHeight0.98_8MCA_regressBrainWeight_WITHGRAY smithral@helix.nih.gov:/data/smithral/sgacc_wgcna/RCCA_toolkit/GENES
+rsync -r 26Sept2025_COMPOSITE_sft3_minSize40_cutHeight0.98 smithral@helix.nih.gov:/data/smithral/sgacc_wgcna/RCCA_toolkit/GENES
   
 # ON CLUSTER 
 spersist --mem=500g --gres=lscratch:800
-cd /data/smithral/sgacc_wgcna/RCCA_toolkit/cca_pls_toolkit_dev-grcca
-vi convert_txt_to_mat.m (if need to change project_dir)
-vi grcca_analysis.m (if need to change project_dir and analysis settings)
+cd /data/smithral/sgacc_wgcna/RCCA_toolkit/cca_pls_toolkit_final
+vi convert_txt_to_mat.m # (if need to change project_dir)
+vi grcca_analysis.m # (if need to change project_dir and analysis settings)
 module load matlab && matlab
 convert_txt_to_mat
 grcca_analysis
   
 # IN LOCAL SPACE rsync results
-cd /Users/smithral/Documents/PhD/projects/sgacc_wgcna_grcca/RCCA_toolkit/GENES/08Mar2024_GENES_qSVAgeSexRaceGC_sft3_minSize40_cutHeight0.98_8MCA_regressBrainWeight_WITHGRAY
-rsync -r smithral@helix.nih.gov:/data/smithral/sgacc_wgcna/RCCA_toolkit/GENES/08Mar2024_GENES_qSVAgeSexRaceGC_sft3_minSize40_cutHeight0.98_8MCA_regressBrainWeight_WITHGRAY/framework .
+cd /Users/smithral/Documents/PhD/projects/sgacc_wgcna_grcca/RCCA_toolkit/GENES/26Sept2025_COMPOSITE_sft3_minSize40_cutHeight0.98
+rsync -r smithral@helix.nih.gov:/data/smithral/sgacc_wgcna/RCCA_toolkit/GENES/26Sept2025_COMPOSITE_sft3_minSize40_cutHeight0.98/framework .
+
+# with wildcard asterisk:
+rsync -r "smithral@helix.nih.gov:/data/smithral/sgacc_wgcna/RCCA_toolkit/GENES/08Mar2024_GENES_qSVAgeSexRaceGC_sft3_minSize40_cutHeight0.98_ControlBDMDDSCZ_8MCA_regressBrainWeight_WITHGRAY/framework/grcca_permutation_VARx0.1_1_L2xGeneLevel_groupL2x*_noCmat" .

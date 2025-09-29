@@ -1235,7 +1235,7 @@ map(
 ```
 
 
-# FIG S12: Compare limme DEG results with Akula et al 2021 #
+# FIG S12: Compare limma DEG results with Akula et al 2021 #
 
 ### A | Venn diagram of significant DEG overlap
 ```{r FigS12a.prep}
