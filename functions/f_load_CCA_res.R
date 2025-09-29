@@ -35,7 +35,7 @@ f_load_cca_res <- function(cca_directory = cca_dir,
     } else {analysis_dir <- paste0(analysis_type, "_permutation_VARx", VARx, "_L2x", lambda, group, "_", cmat)}
     
     ## Combine paths to point to results (and check to make sure directory exists)
-    results_dir <- paste0(cca_dir, "framework/", analysis_dir)
+    results_dir <- paste0(cca_directory, "framework/", analysis_dir)
     if (!dir.exists(results_dir)) {stop("Analysis directory does not exist\n", results_dir)}
     
     ## Identify final model path (weights)
@@ -57,7 +57,7 @@ f_load_cca_res <- function(cca_directory = cca_dir,
     print("Loading Y and X matrices")
     
     ## Y.mat
-    Y.mat <- read.table(paste0(cca_dir, "data/Y.txt"))
+    Y.mat <- read.table(paste0(cca_directory, "data/Y.txt"))
     df_y <- Y.mat %>% 
         rownames_to_column("sample") %>% 
         as_tibble()
@@ -80,7 +80,7 @@ f_load_cca_res <- function(cca_directory = cca_dir,
     
     ## X.mat
     if (level == "gene") {col_name <- "ensembl_gene_id"} else if (level == "transcript") {col_name <- "ensembl_transcript_id"}
-    X.mat <- read.table(paste0(cca_dir, "data/X.txt"))
+    X.mat <- read.table(paste0(cca_directory, "data/X.txt"))
     df_x <- X.mat %>% 
         t() %>% 
         as.data.frame %>% 
