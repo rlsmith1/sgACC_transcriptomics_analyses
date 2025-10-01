@@ -22,6 +22,9 @@ library(tidyverse)
 library(DESeq2)
 library(MASS)
 
+library(ggh4x)
+library(pals)
+
 
 ### LOAD DATA ###
 
@@ -43,6 +46,16 @@ technical_covariates <- c(
 biological_covariates <- c(
     "age_death", "sex_at_birth", "race", "bmi", "height", "weight",
     "marital_status", "manner_death", "education", "suicide", "brain_weight"
+)
+
+
+## Define diagnosis colors (for plotting)
+## Dx colors
+dx_colors <- c(
+    "Control" = "#0072B2", 
+    "BD" = "#E69F00", 
+    "MDD" = "#009E73", 
+    "SCZ" = "#9966FF"
 )
 
 
@@ -198,7 +211,6 @@ df_mca_covar_cor <- expand_grid(
 save(df_eig, df_var_loadings, df_ind_loadings, df_mca_covar_cor,
      file = paste0(analysis_objects_dir, "R2-drug_MCA_results_modeImpute.Rdata")
 )
-
 
 
 
@@ -510,4 +522,53 @@ map(
     .x = c(".png", ".pdf"),
     .f = ~ ggsave(paste0(figures_dir, "R3C1D.MCA_dimension_covariate_cor", .x), width = 6.5, height = 3.4)
 )
+
+
+
+
+# Fig SXX: Covariate correlation plot including diagnosis and technical variables -----------------------------------------------------------------
+
+
+## Plot
+df_figSXXD %>% 
+    
+    # Layout
+    ggplot(aes(x = covariate, y = dimension)) +
+    geom_point(aes(fill = pearsons_r, size = abs(pearsons_r), color = significant), shape = 21) +
+    
+    facet_wrap(vars(type), scales = "free_x", nrow = 1) +
+    force_panelsizes(cols = c(
+        length(dx_colors), 
+        length(biological_covariates),
+        length(technical_covariates),
+        length(drug_covariates)
+    )
+    ) +
+    
+    # Aesthetics
+    scale_fill_gradientn(colors = rev(brewer.rdbu(100)), limits = c(-1.0, 1.0), name = "r") +
+    scale_color_manual(values = c("yes" = "black", "no" = "transparent"), guide = "none") + #name = "FDR<0.05") +
+    scale_size_continuous(limits = c(0, 1.0), range = c(0.1, 4), guide = "none") +
+    
+    coord_cartesian(clip = "off") +
+    labs(x = NULL, y = "Dimension", 
+         title = "MCA dimension correlations with known covariates") +
+    theme(
+        legend.margin = margin(l = -15),  
+        legend.key.width = unit(0.15, "cm"),
+        legend.key.height = unit(0.60, "cm"),
+        legend.title = element_text(hjust = 0.5, size = 7),
+        legend.text = element_text(size = 6),
+        strip.text = element_text(size = 8),
+        axis.text.y = element_text(size = 8.5),
+        axis.text.x = element_text(angle = 45, hjust = 1, size = 7)
+    )
+
+
+## Save
+map(
+    .x = c(".png", ".pdf"),
+    .f = ~ ggsave(paste0(figures_dir, "R3C1.MCA_dimension_covariate_cor_ALL", .x), width = 6.5, height = 3.4)
+)
+
 
