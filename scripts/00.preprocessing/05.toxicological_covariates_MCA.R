@@ -28,6 +28,15 @@ library(MASS)
 load(paste0(base_dir, "objects/14Nov2023_covariates.Rdata")) # df_covariates, df_covariates_numeric (generated in 00.clean_covariates.R)
 
 
+## Define toxicological covariates
+drug_covariates <- c(
+    "smoker", "nicotine_cotinine", "alcohol", "opioids", "cannabinoids", "beta_blockers",
+    "major_stimulants_cocaine_included", "minor_stimulants", "anticholinergics", "antidepressants",
+    "anti_epileptics", "anti_histamines", "antipsychotics", "mood_stabilizers", "sedative_hypnotic_anxiolitics", "benzos",
+    "other_psychotropic_drug", "non_psychiatric"
+)
+
+
 
 # Run MCA -----------------------------------------------------------------
 
@@ -124,7 +133,7 @@ df_nas <- df_covariates_numeric %>%
 
 df_nas
 
-# covariate PCA ---------------------------------------------------------------------
+# DEPR: covariate PCA ---------------------------------------------------------------------
 
 pca <- df_vsd_regress %>% column_to_rownames("sample") %>% t() %>% 
   prcomp(center = TRUE, scale = TRUE)

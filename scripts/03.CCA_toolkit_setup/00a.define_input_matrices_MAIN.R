@@ -1,25 +1,41 @@
 
-######################################################################################
-
+# ---------------------------------------------------------------------------- #
 # Define X.mat, Y.mat, and C.mat to include in (G)RCCA analysis
+# ---------------------------------------------------------------------------- #
 
-######################################################################################
 
-
-### Setup ###
+# ---------------------------------- SETUP ----------------------------------- #
 
 base_dir <- "~/Documents/PhD/projects/sgacc_wgcna_grcca/"
+analysis_objects_dir <- paste0(base_dir, "outputs/objects/")
+
 source(paste0(base_dir, "scripts/load_WGCNA_res.R"))
 
-### SELECT samples to include ###
-dx_groups_to_analyze <- c("Control", "BD") # select diagnostic groups of interest
+
+
+# ---- For R3: Replace original MCA results with mode imputed MCA results ---- #
+
+# Note: This is for a sensitivity analysis
+
+## Remove original MCA results and load mode-imputed MCA results (response to R3)
+rm(list = c("df_eig", "df_var_loadings", "df_ind_loadings", "df_mca_covar_cor"))
+load(paste0(analysis_objects_dir, "R2-drug_MCA_results_modeImpute.Rdata"))
+
+
+
+# --------------------- SELECT samples to include  ----------------------------#
+
+# Note: This is for cross-disorder sensitivity analyses, the default is to include all 4
+
+
+dx_groups_to_analyze <- c("Control", "BD", "MDD", "SCZ") # select diagnostic groups of interest
 samples_to_include <- df_covariates %>% 
     filter(dx %in% dx_groups_to_analyze) %>% 
     pull(sample) %>% 
     unique
 
 
-### X.MAT ###
+# ------------------------------ DEFINE X.mat ---------------------------------#
 
 # define gene order to align modules & genes
 df_order <- df_modules_filt %>% 
@@ -45,7 +61,7 @@ sample_order <- rownames(X.mat)
 dim(X.mat) # n = 18677
 
 
-### Y.MAT AND C.MAT
+# ------------------------- DEFINE Y.mat (and C.mat) --------------------------#
 
 # define number of MCA dimensions to include
 n_mca_dim <- 8
@@ -93,20 +109,25 @@ all(rownames(X.mat) == rownames(YC.mat))
 all(colnames(X.mat) == c(df_order %>% pull(ensembl_gene_id)))
 
 
-### EXPORT MATRICES FOR CCA/PLS TOOLKIT
+# ----------------------- EXPORT matrices for toolkit -------------------------#
 
-# define paths and create directory
+# Define paths and create directory
+analysis_date <- Sys.Date() %>% as.character() %>% str_replace_all("-", ".")
 type <- "GENES/"
-project_dir <- paste0(prefix,
-                      "_sft", soft_power, "_minSize", minimum_size, "_cutHeight", tree_cut_height, "_",
-                      paste0(dx_groups_to_analyze, collapse = ""), "_", # diagnostic groups included
-                      n_mca_dim, "MCA_regressBrainWeight_withGray/") # _WITHGRAY, _withGray
+project_dir <- paste0(
+    prefix %>% str_replace("^[^_]*", analysis_date),
+    "_sft", soft_power, "_minSize", minimum_size, "_cutHeight", tree_cut_height, "_",
+    paste0(dx_groups_to_analyze, collapse = ""), "_", # diagnostic groups included
+    #n_mca_dim, "MCA_regressBrainWeight_withGray/" # original suffix
+    "8MCA_modeImpute/"
+) 
 cca_dir <- paste0(base_dir, "RCCA_toolkit/", type, project_dir)
 dir.create(cca_dir, recursive = TRUE)
 cca_data_dir <- paste0(cca_dir, "data/")
 dir.create(cca_data_dir)
 
-# write matrices
+
+# Write matrices
 write.table(X.mat, file = paste0(cca_data_dir, "X.txt"))
 write.table(Y.mat, file = paste0(cca_data_dir, "Y.txt"))
 write.table(C.mat, file = paste0(cca_data_dir, "C.txt"))

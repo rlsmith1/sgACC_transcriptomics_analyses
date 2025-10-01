@@ -156,7 +156,7 @@ benchmarking_lists <- list(
 
 technical_covariates <- c(
     "mapped_percent", "gc_percent", "five_prime_three_prime_bias", "rin_acsg", "rna_extraction_batch",
-    "library_batch", "pmi", "pmi_confidence", "source", "ph" # "max_rin", "max_rine"
+    "library_batch", "pmi", "pmi_confidence", "source", "ph", "max_rin", "max_rine"
 )
 biological_covariates <- c(
     "age_death", "sex_at_birth", "race", "bmi", "height", "weight",
