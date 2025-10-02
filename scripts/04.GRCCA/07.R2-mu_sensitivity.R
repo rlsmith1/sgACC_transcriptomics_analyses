@@ -134,7 +134,7 @@ df_results_muSENS %>%
 ## Save plot
 map(
     .x = c(".png", ".pdf"),
-    .f = ~ ggsave(paste0(figures_dir, "R3C2A.mu_sensitivity_model_results", .x), width = 6.5, height = 2.5)
+    .f = ~ ggsave(paste0(figures_dir, "R3C2A.mu_sensitivity_model_results", .x), width = 6.5, height = 2.1)
 )
 
 
@@ -158,34 +158,33 @@ df_y_res_muSENS %>%
     mutate(
         type = ifelse(str_detect(covariate, "Dim"), "tox", "main"),
         significant = ifelse(p_adj < 0.05 & abs(z_score) > 2, "black", "transparent"),
-        covariate = factor(covariate, levels = rev(covariate_order))
+        covariate = factor(covariate, levels = covariate_order)
     ) %>% 
     arrange(abs(pearsons_r)) %>% 
     
     # layout
-    ggplot(aes(x = pearsons_r, y = covariate)) +
-    geom_segment(aes(x = 0, xend = pearsons_r, color = mu),
-                 position = position_dodge(width = 0.6), linewidth = 0.5) +
+    ggplot(aes(x = covariate, y = pearsons_r)) +
+    geom_segment(aes(y = 0, yend = pearsons_r, color = mu),
+                 position = position_dodge(width = 0.7), linewidth = 0.5) +
     geom_point(aes(size = -log10(p_adj + 10^-100), fill = mu, color = I(significant)), 
-               position = position_dodge(width = 0.6), shape = 21) +
-    geom_vline(xintercept = 0, color = "gray", linewidth = 0.5) +
+               position = position_dodge(width = 0.7), shape = 21) +
+    geom_hline(yintercept = 0, color = "gray", linewidth = 0.5) +
     
     # Facet by covariate type
-    facet_wrap(vars(type), scales = "free_y", ncol = 1) +
-    force_panelsizes(rows = c(2, 8)) +
+    facet_wrap(vars(type), scales = "free_x", nrow = 1) +
+    force_panelsizes(cols = c(3, 8)) +
     
     # Plot aesthetics
-    coord_flip() +
     scale_fill_nejm(guide = "none") +
     scale_color_nejm(guide = "none") +
     scale_size_continuous(range = c(0.5, 3), name = "-log10(FDR)") +
     #coord_cartesian(clip = "off") +
-    labs(x = "Structure correlation (ry)", y = NULL,
+    labs(x = NULL, y = "Structure correlation (ry)",
          title = "B | Covariate results") +
     theme(
         strip.text = element_blank(),
         panel.spacing = unit(0.25, "cm"),
-        legend.position = c(0.60, 0.20),
+        legend.position = c(0.75, 0.75),
         legend.key.size = unit(0.25, "cm"),
         legend.title = element_text(margin = margin(t = -2))
         #legend.text = element_text(size = 5)
@@ -195,7 +194,7 @@ df_y_res_muSENS %>%
 ## Save
 map(
     .x = c(".png", ".pdf"),
-    .f = ~ ggsave(paste0(figures_dir, "R3C2B.mu_sensitivity_covariate_results", .x), width = 2.5, height = 3.7)
+    .f = ~ ggsave(paste0(figures_dir, "R3C2B.mu_sensitivity_covariate_results", .x), width = 6.5, height = 2.1)
 )
 
 
@@ -235,19 +234,24 @@ df_x_res_muSENS_plot %>%
     theme(
         plot.title = element_text(face = "bold", size = 11),
         axis.title = element_text(size = 10),
-        axis.text = element_text(size = 9)
+        axis.text = element_text(size = 9),
+        strip.text = element_text(margin = margin(t = 1, b = 1))
     )
 
 
 ## Save
 map(
     .x = c(".png", ".pdf"),
-    .f = ~ ggsave(paste0(figures_dir, "R3C2C.mu_sensitivity_gene_results", .x), width = 6.5, height = 2)
+    .f = ~ ggsave(paste0(figures_dir, "R3C2C.mu_sensitivity_gene_results", .x), width = 6.5, height = 1.75)
 )
 
 
 
 # FIG XXD: Gene-level overlaps (after threshold for significance) ---------------------------------------------------
+
+
+## Define mu values to plot across
+mu_sets <- colnames(df_xres_muSENS_upset %>% dplyr::select(-ensembl_gene_id))
 
 
 ## Format data for upset plot
@@ -256,20 +260,68 @@ df_xres_muSENS_upset <- df_x_res_muSENS %>%
     # For each diagnosis, create logical column indicating if this gene is significant or not
     mutate(significant = ifelse(significant == 1, TRUE, FALSE)) %>% 
     arrange(mu) %>% 
-    pivot_wider(id_cols = ensembl_gene_id, names_from = mu, values_from = significant) #%>% 
-    
+    pivot_wider(id_cols = ensembl_gene_id, names_from = mu, values_from = significant) %>% 
+
     # remove genes that weren't significant in any analysis
-    filter(!(Actual == FALSE & BD == FALSE & MDD == FALSE & Composite == FALSE))
+    filter(if_any(starts_with("0"), ~ . == TRUE))
+
 
 ## Upset plot
-upset(
+p_r3c2d <- upset(
+    
     df_xres_muSENS_upset, 
-    colnames(df_xres_muSENS_upset %>% dplyr::select(-ensembl_gene_id)),
+    mu_sets,
+    stripes = "white", # remove gray strips from intersections matrix
+    wrap = TRUE, # wrap plot to put title on the top
+    sort_sets = "FALSE",
+    
+    # Simplify base annotations and control text size
     base_annotations = list(
-        "Intersection size" = intersection_size(
-            text = list(size = 3)
+        "Intersection size" = (
+            intersection_size(
+                text = list(size = 0) # text size for count text
+            ) +
+                labs(x = NULL) +
+                theme(
+                    axis.text.x = element_blank(),
+                    axis.text.y = element_text(size = 8),
+                    axis.title.y = element_text(size = 9)
+                )
         )
     ),
+    
+    # Adjust set sizes plot
+    set_sizes = (
+        upset_set_size() +
+            geom_text(
+                aes(label = after_stat(count)), # add count labels to show # significant genes in each mu set
+                color = "white",
+                hjust = -0.1,
+                size = 2.5,
+                stat = "count"
+            ) +
+            labs(y = "# significant genes") +
+            theme(
+                axis.text.y = element_blank(),
+                axis.title.y = element_blank(),
+                axis.ticks.y = element_blank(),
+                
+                axis.text.x = element_text(size = 8),
+                axis.title.x = element_text(size = 9)
+            )
+    ),
+    
+    # Adjust the intersections matrix
+    matrix = (
+        intersection_matrix(
+            geom = geom_point(size = 1.0),
+            segment = geom_segment(color = "black", linewidth = 0.25)
+        ) +
+            #scale_color_nejm() +
+            labs(x = NULL, y = NULL)
+    ),
+
+    #Define colors for the query sets (affects combination matrix and left bar plot)
     queries = list(
         upset_query(set = "0.001", color = pal_nejm()(1), fill = pal_nejm()(1)),
         upset_query(set = "0.01", color = pal_nejm()(2)[2], fill = pal_nejm()(2)[2]),
@@ -277,33 +329,49 @@ upset(
         upset_query(set = "0.5", color = pal_nejm()(4)[4], fill = pal_nejm()(4)[4]),
         upset_query(set = "0.9", color = pal_nejm()(5)[5], fill = pal_nejm()(5)[5]),
         upset_query(set = "0.999", color = pal_nejm()(6)[6], fill = pal_nejm()(6)[6])
+    ),
+    
+    # Use upset_theme to target matrix elements
+    themes = list(
+
+        # Intersection Matrix Theme (Dots/Lines); remove x-axis title and text
+        intersections_matrix = theme(
+            axis.text.x = element_blank(), 
+            axis.title.x = element_blank(),
+            axis.ticks.x = element_blank(),
+            
+            axis.text.y = element_text(size = 8)
+        )
     )
+    
 ) +
-    labs(x = NULL, title = "D | Shared significant genes across analyses") +
-    theme(
-        plot.title = element_text(face = "bold", size = 11),
-        axis.title = element_text(size = 10),
-        axis.text = element_text(size = 9)
-    )
+
+    # Add plot title & remove intersection matrix x lab
+    labs(title = "D | Shared significant genes across analyses")
 
 
 ## Save
 map(
     .x = c(".png", ".pdf"),
-    .f = ~ ggsave(paste0(figures_dir, "R3C3D.cross_disorder_gene_upset", .x), width = 6.5, height = 3)
+    .f = ~ ggsave(paste0(figures_dir, "R3C2D.mu_sensitivity_gene_upset", .x), 
+                  plot = p_r3c2d,
+                  width = 6.5, height = 3)
 )
 
 
+
+#------------------------------------------------------------------------------#
+
 ## Stats: run hypergeometric tests across all combinations
-l_sig_genes <- df_xdx_xres %>%
+l_sig_genes <- df_x_res_muSENS %>%
     filter(significant == 1) %>%
-    group_split(Analysis) %>%
+    group_split(mu) %>%
     map( ~ pull(.x, ensembl_gene_id)) %>%
-    set_names(analysis_order)
+    set_names(mu_sets)
 
 df_hypergeometric_res <- expand_grid(
-    analysis1 = analysis_order,
-    analysis2 = analysis_order
+    analysis1 = mu_sets,
+    analysis2 = mu_sets
 ) %>% 
     filter(analysis1 != analysis2) %>%
     group_by(grp = paste0(pmin(analysis1, analysis2), "_", pmax(analysis1, analysis2))) %>% 
@@ -325,7 +393,10 @@ df_hypergeometric_res <- expand_grid(
     unnest(cols = c(p_value, odds_ratio))
 
 df_hypergeometric_res %>% filter(p_value > 0.05)
-
+df_hypergeometric_res %>% filter(p_value < 0.05)
+df_hypergeometric_res %>% 
+    mutate(padj = p.adjust(p_value, method = "BH")) %>% 
+    filter(padj > 0.05)
 
 
 
