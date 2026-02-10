@@ -1,0 +1,335 @@
+---
+title: "01_GRCCA-results"
+author: "Rachel Smith"
+format: html
+editor: visual
+---
+
+# Characterize gene-level GRCCA results (gene weights & enrichments)
+
+Load GRCCA results (output from toolkit script grcca_analysis.m on cluster). Run permutation analysis to test the significance of rx association in each diagnostic group.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+base_dir <- "~/Documents/PhD/projects/sgacc_wgcna_grcca/"
+scripts_dir <- paste0(base_dir, "scripts/")
+objects_dir <- paste0(base_dir, "outputs/objects/")
+figures_dir <- paste0(base_dir, "outputs/figures/Fig2_GRCCAres/")
+
+# Create figures directory if it doesn't exist
+if(!dir.exists(figures_dir)) dir.create(figures_dir, recursive = TRUE)
+```
+
+## Setup
+
+```{r load_data}
+source(paste0(scripts_dir, "load_WGCNA_res.R"))
+```
+
+## Load GRCCA results
+
+```{r load_grcca}
+## Identify CCA directory
+dx_groups_to_analyze <- c("Control", "BD", "MDD", "SCZ") # select diagnostic groups of interest
+n_mca_dim <- 8
+type <- "GENES/"
+project_dir <- paste0(
+    prefix,
+    "_sft", soft_power, "_minSize", minimum_size, "_cutHeight", tree_cut_height, "_",
+    paste0(dx_groups_to_analyze, collapse = ""), "_",
+    n_mca_dim, "MCA_regressBrainWeight_WITHGRAY/"
+)
+cca_dir <- paste0(base_dir, "RCCA_toolkit/", type, project_dir)
+
+
+## Read in GRCCA analysis results (f_load_cca_res defined in functions directory)
+analysis_type <- "grcca"
+VARx <- "0.1_1"
+l_grcca_res <- f_load_cca_res(
+    cca_directory = cca_dir,
+    level = "gene",
+    analysis_type = analysis_type,
+    mu = 0.1,
+    VARx = VARx,
+    include_Cmat = FALSE,
+    rename_covariates = TRUE
+)
+
+## Assign results to tibbles; negate everything so SCZ is positive
+df_results <- l_grcca_res$model_results
+df_lvs <- l_grcca_res$latent_variables %>% mutate_at(vars(c(lvx, lvy)), ~ -.x)
+df_y_res <- l_grcca_res$y_res %>% mutate_at(vars(c(weight, z_score, pearsons_r)), ~ -.x)
+df_x_res <- l_grcca_res$x_res %>%
+    mutate_at(vars(c(weight, z_score, pearsons_r)), ~ -.x) %>%
+    left_join(df_ensembl_to_symbol) %>%
+    left_join(df_modules_filt %>% dplyr::select(-c(mod_set, color)), by = join_by(ensembl_gene_id)) %>%
+    dplyr::select(ensembl_gene_id, gene_symbol, module, everything()) %>%
+    mutate(gene_symbol = ifelse(is.na(gene_symbol), ensembl_gene_id, gene_symbol))
+```
+
+## Test the significance of the structure correlation alignment with expression in each diagnostic group
+
+```{r significance_testing}
+## Combine structure correlation and expression data
+df_rx_expr <- df_vsd_regress %>%
+    pivot_longer(contains("ENSG"), names_to = "ensembl_gene_id", values_to = "expression_value") %>%
+    mutate(dx = case_when(
+        str_detect(sample, "control") ~ "Control",
+        str_detect(sample, "bipolar") ~ "BD",
+        str_detect(sample, "mdd") ~ "MDD",
+        str_detect(sample, "schizo") ~ "SCZ"
+    ) %>% factor(levels = names(dx_colors))) %>%
+    group_by(ensembl_gene_id, dx) %>%
+    summarise(mean_expr = mean(expression_value)) %>%
+    left_join(df_x_res)
+
+
+## Calculate the actual (observed) correlation between rx and mean expression in each diagnostic group
+df_rx_expr_cor <- df_rx_expr %>%
+    group_by(dx) %>%
+    group_modify(~ {
+        test <- cor.test(.x$mean_expr, .x$pearsons_r)
+
+        tibble(
+            correlation = test$estimate,
+            p_value = test$p.value
+        )
+    }) %>%
+    ungroup() %>%
+    mutate(p_adj = p.adjust(p_value, method = "BH"))
+
+## Permute the rx vector and re-calculate the correlation
+n_perm <- 10000
+df_rx_expr_cor_perm <- tibble()
+set.seed(0206)
+for (i in 1:n_perm) {
+    if (i %% 100 == 0) {
+        # print(paste0("Running permutation ", i))
+    }
+
+    # 1: Shuffle structure correlations within module
+    df_perm <- df_rx_expr %>%
+        group_by(module) %>%
+        mutate(permuted_r = sample(pearsons_r, replace = FALSE)) %>%
+        ungroup()
+
+    # For each diagnostic group, correlate permuted_r with mean_expr
+    df_tmp <- df_perm %>%
+        group_by(dx) %>%
+        group_modify(~ {
+            test <- cor.test(.x$mean_expr, .x$permuted_r)
+
+            tibble(
+                correlation = test$estimate,
+                p_value = test$p.value
+            )
+        }) %>%
+        ungroup() %>%
+        mutate(
+            p_adj = p.adjust(p_value, method = "BH"),
+            perm = i
+        )
+
+    # Append to tibble
+    df_rx_expr_cor_perm <- df_rx_expr_cor_perm %>% bind_rows(df_tmp)
+}
+
+## Calculate permutation p-values
+df_rx_expr_cor_perm_pvals <- df_rx_expr_cor_perm %>%
+    left_join(df_rx_expr_cor %>% dplyr::select(dx, obs_corr = correlation), by = "dx") %>%
+    group_by(dx) %>%
+    summarise(
+        perm_p = (sum(abs(correlation) >= abs(obs_corr)) + 1) / (n_perm + 1)
+    ) %>%
+    left_join(df_rx_expr_cor)
+```
+
+## Save
+
+```{r save}
+save(df_lvs, df_results, df_y_res, df_x_res, df_rx_expr_cor_perm_pvals,
+    file = paste0(objects_dir, "GRCCA_results.Rdata")
+)
+```
+
+## Figure 2A | Model results
+
+```{r Fig2a.plot}
+df_results %>% 
+    mutate(significant = ifelse(pval == 0.001, "yes", "no")) %>% 
+    ggplot(aes(x = factor(varx*100), y = -log10(pval))) +
+    geom_segment(aes(y = 0, yend = -log10(pval))) +
+    geom_point(aes(size = correl, shape = significant, fill = -log10(pval))) +
+    geom_hline(yintercept = 0, color = "darkgrey") +
+    scale_shape_manual(values = c("yes" = 23, "no" = 21), guide = "none") +
+    scale_fill_gradient(low = "white", high = "#67001F", limits = c(0, 3), guide = "none") +
+    guides(size = guide_legend(title = "X-Y LV correlation", override.aes = list(shape = 21))) +
+    coord_cartesian(clip = "off") +
+    labs(x = "X variance explained (%)", y = "-log10(model p-value)",
+         title = "A | Optimal variance explained \nby model"
+    ) +
+    theme(
+        legend.position = c(0.075, 0.6),
+        legend.key.size = unit(0.1, "cm")
+    )
+
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(figures_dir, "A.optimal_var_explained", .x), width = 2.5, height = 2)
+)
+```
+
+## Figure 2B | Covariate (Y) structure correlations
+
+```{r Fig2b.plot, fig.width=4.0}
+df_y_res %>% 
+    mutate(significant = ifelse(abs(z_score) >= 2 & p_adj < 0.05, "*", "")) %>% 
+    
+    ggplot(aes(x = pearsons_r, y = reorder(covariate, pearsons_r))) +
+    geom_point(aes(size = -log10(p_adj), fill = pearsons_r), shape = 21) +
+    geom_vline(xintercept = 0, color = "darkgrey") +
+    geom_text(aes(label = significant), size = 6, vjust = 0.75, hjust = -1.5, color = "black") +
+    scale_fill_gradientn(colors = gene_weight_color_scale, limits = c(-1, 1), guide = "none") +
+    scale_size_continuous(range = c(2, 6)) +
+    guides(size = guide_legend(title = "-log10(FDR)")) +
+    coord_cartesian(clip = "off") +
+    xlim(c(-1, 1)) +
+    labs(y = NULL, x = expression("Structure correlation (" * italic(r)[y] * ")"), 
+         title = "B | Covariate structure correlations") +
+    theme(legend.position = c(0.68, 0.35), 
+          legend.box = "horizontal",
+          #legend.justification = "center",
+          #legend.key.size = unit(0.2, 'cm')
+          legend.key.height = unit(0.29, "cm"),
+          legend.key.width = unit(0.30, "cm")
+    )
+
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(figures_dir, "B.covariate_structCor", .x), width = 4.0, height = 2)
+)
+```
+
+## Figure 2C | Top n genes (X) by structure correlation
+
+```{r Fig2c.prep}
+df_fig2c <- df_x_res %>% 
+    dplyr::filter(p_adj < 0.05 & abs(z_score) >= 2) %>%
+    top_n(n = 20, wt = abs(pearsons_r)) %>%
+    mutate(direction = ifelse(pearsons_r < 0, "2neg", "1pos"))
+```
+
+```{r Fig2c.plot, fig.height=4}
+df_fig2c %>% 
+    ggplot(aes(x = pearsons_r, y = reorder(gene_symbol, pearsons_r))) +
+    geom_point(aes(size = -log10(p_adj), fill = pearsons_r), shape = 21) +
+    geom_vline(xintercept = 0, color = "darkgrey") +
+    facet_wrap(vars(direction), ncol = 1, scales = "free_y") +
+    force_panelsizes(rows = c(16, 4)) +
+    scale_fill_gradientn(colors = gene_weight_color_scale, 
+                         limits = c(-0.57, 0.57), guide = "none") +
+    scale_size_continuous(range = c(2, 5)) +
+    guides(size = guide_legend(title = "-log10(FDR)")) +
+    xlim(c(-1, 1)) +
+    coord_cartesian(clip = "off") +
+    labs(y = NULL, x = expression("Structure correlation (" * italic(r)[x] * ")"), 
+         title = "C | Top 20 genes by \nstructure correlation"
+    ) +
+    theme(strip.text = element_blank(), 
+          panel.spacing = unit(2, "lines"),
+          legend.position = c(0.05, 0.7), 
+          legend.box = "horizontal",
+          legend.key.size = unit(0.35, "cm")
+    )
+
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(figures_dir, "C.gene_structCor", .x), width = 2.5, height = 4)
+)
+```
+
+## Figure 2D | Expression directions of top positively- and negatively-weighted genes
+
+```{r Fig2d.prep}
+top_pos_gene <- df_x_res %>% dplyr::filter(pearsons_r > 0) %>% arrange(-abs(pearsons_r)) %>% head(1) %>% pull(ensembl_gene_id) # BCL7A
+top_neg_gene <- df_x_res %>% dplyr::filter(pearsons_r < 0) %>% arrange(-abs(pearsons_r)) %>% head(1) %>% pull(ensembl_gene_id) # CFAP46
+df_fig2d <- df_vsd_regress %>% 
+    dplyr::select(sample, all_of(c(top_neg_gene, top_pos_gene))) %>% 
+    pivot_longer(contains("ENSG"), names_to = "ensembl_gene_id", values_to = "expr") %>% 
+    left_join(df_ensembl_to_symbol) %>% 
+    mutate(dx = case_when(
+        str_detect(sample, "control") ~ "Control",
+        str_detect(sample, "bipolar") ~ "BD",
+        str_detect(sample, "mdd") ~ "MDD",
+        str_detect(sample, "schizo") ~ "SCZ"
+    ) %>% 
+        factor(levels = names(dx_colors)))
+```
+
+```{r Fig2d.stats}
+load(paste0(base_dir, "objects/DE_results.Rdata")) # df_de_res (Using Rdata instead of RDS as per 00_DGE output)
+# Note: Ensure this file exists. In 00_DGE it was saved as DE_results.Rdata which contains df_de_res_all, not df_de_res.
+# Checking standard output from 00_DGE.. it saves `df_de_res_all`. 
+# Assuming `df_de_res` refers to `df_de_res_all`.
+df_de_res_all %>% dplyr::filter(ensembl_gene_id %in% c(top_pos_gene, top_neg_gene))
+```
+
+```{r Fig2d.plot, fig.width=4.0}
+df_fig2d %>% 
+    ggplot(aes(x = dx, y = expr)) +
+    geom_point(aes(color = dx), position = position_jitter(width = 0.2), size = 0.5) +
+    geom_boxplot(aes(color = dx, fill = dx), alpha = 0.1, outlier.shape = NA) +
+    geom_hline(yintercept = 0, color = "darkgrey") +
+    facet_wrap(vars(gene_symbol), scales = "free_y", nrow = 1) +
+    #force_panelsizes(cols = c(1, 1)) +
+    scale_fill_manual(values = dx_colors, guide = "none") +
+    scale_color_manual(values = dx_colors, guide = "none") +
+    labs(x = NULL, y = "Corrected expression value",
+         title = "D | Gene expression values") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 0.9))
+
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(figures_dir, "D.top_gene_expression_values", .x), width = 4, height = 2)
+)
+```
+
+## Figure 2E | GRCCA structure correlations (r) as they relate to expression values
+
+```{r Fig2e.prep}
+df_fig2e <- df_vsd_regress %>% 
+    pivot_longer(contains("ENSG"), names_to = "ensembl_gene_id", values_to = "expression_value") %>% 
+    mutate(dx = case_when(
+        str_detect(sample, "control") ~ "Control",
+        str_detect(sample, "bipolar") ~ "BD",
+        str_detect(sample, "mdd") ~ "MDD",
+        str_detect(sample, "schizo") ~ "SCZ"
+    ) %>% factor(levels = names(dx_colors))) %>% 
+    group_by(ensembl_gene_id, dx) %>% 
+    summarise(mean_expr = mean(expression_value)) %>% 
+    left_join(df_x_res)
+```
+
+```{r Fig2e.plot, fig.width=4.0}
+df_fig2e %>% 
+    ggplot(aes(x = mean_expr, y = pearsons_r)) +
+    geom_hline(yintercept = 0, color = "gray") +
+    geom_vline(xintercept = 0, color = "gray") +
+    geom_point(color = "black", size = 0.25) +
+    geom_smooth(aes(color = dx), method = "lm", linewidth = 0.75) +
+    stat_cor(aes(label = after_stat(r.label), color = dx), label.sep = "\n", size = 3,
+             label.y.npc = "top", hjust = -0.1, vjust = -1.75, face = "bold") +
+    facet_wrap(vars(dx), nrow = 1) +
+    scale_color_manual(values = dx_colors) +
+    scale_x_continuous(breaks = c(-0.4, 0, 0.4)) +
+    coord_cartesian(clip = "off") +
+    labs(x = "Mean expression (corrected)", y = expression("Structure correlation (" * italic(r)[x] * ")"),
+         title = "E | Relationship between gene \nstructure correlation & expression"
+    ) +
+    theme(legend.position = "none")
+
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(figures_dir, "E.gene_strucCor_vs_Expr", .x), width = 4.0, height = 2)
+)
+```

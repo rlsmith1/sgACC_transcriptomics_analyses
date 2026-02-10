@@ -1,0 +1,135 @@
+---
+title: "04a_toxicological-covariates-MCA"
+author: "Rachel Smith"
+format: html
+editor: visual
+---
+
+# Run Multiple Correspondence Analysis on toxicology data across samples
+
+Run MCA (dimensionality reduction for categorical data) to reduce dimensionality of toxicology data for GRCCA. This decreases the number of features we include in the Y (covariate) matrix, thus mitigating overfitting while still representing the covariate information.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+base_dir <- "~/Documents/PhD/projects/sgacc_wgcna_grcca/"
+figures_dir <- paste0(base_dir, "outputs/figures/supplement/")
+analysis_objects_dir <- paste0(base_dir, "outputs/objects/")
+```
+
+## Libraries
+
+```{r libraries, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(DESeq2)
+library(MASS)
+```
+
+## Load data
+
+```{r load_data}
+# Cleaned covariates
+load(paste0(base_dir, "objects/22Jan2025_covariates.Rdata")) # df_covariates, df_covariates_numeric (generated in 00_clean-covariates.R)
+
+## Define toxicological covariates to include
+drug_covariates <- c(
+    "smoker", "nicotine_cotinine", "alcohol", "opioids", "cannabinoids", # "beta_blockers", # remove beta blockers from analysis because there are too many missing values
+    "major_stimulants_cocaine_included", "minor_stimulants", "anticholinergics", "antidepressants",
+    "anti_epileptics", "anti_histamines", "antipsychotics", "mood_stabilizers", "sedative_hypnotic_anxiolitics", "benzos",
+    "other_psychotropic_drug", "non_psychiatric"
+)
+```
+
+## MCA
+
+```{r mca}
+## Select variables for analysis
+df_drugs <- df_covariates_numeric %>% 
+    ungroup %>% 
+    dplyr::select(sample, all_of(drug_covariates)) %>% 
+    distinct %>% 
+    mutate_all( ~ as.character(.x)) %>% 
+    column_to_rownames("sample")
+
+
+## Run MCA
+n_factors <- ncol(df_drugs) # 17 known compounds
+
+set.seed(20240308)
+mca.res <- mca(df_drugs %>%
+                   # remove NAs (for now)
+                   mutate_all(~ifelse(is.na(.x), 0, .x)) %>% 
+                   mutate_all(~factor(.x)),
+               nf = n_factors
+)
+
+
+## Calculate eigenvalue of each dimension
+df_eig <- tibble(
+    dim = 1:n_factors,
+    var = (mca.res$d^2)*100,
+    cum_var = cumsum(var)
+)
+
+
+## Extract variable loadings
+df_var_loadings <- mca.res$cs %>% 
+    as.data.frame %>% 
+    dplyr::rename_all( ~ paste0("dim", .x)) %>% 
+    rownames_to_column("variable") %>% 
+    as_tibble() %>% 
+    separate(variable, into = c("drug", "use"), sep = "\\.") %>% 
+    mutate(use = ifelse(use == 1, "yes", "no"))
+
+
+## Extract individual loadings on each dimension
+df_ind_loadings <- mca.res$rs %>%
+  as.data.frame %>%
+  dplyr::rename_all( ~ paste0("dim", .x)) %>%
+  rownames_to_column("sample") %>%
+  as_tibble()
+```
+
+## Correlate each covariate with each MCA dimension
+
+```{r correlate_mca}
+## Dummy code diagnosis variable for correlation
+all(df_covariates_numeric$age_death == df_covariates$age_death) # check row order
+df_covariates_dxDummy <- df_covariates_numeric %>% 
+    mutate(dx = df_covariates$dx) %>% 
+    mutate(
+        Control = ifelse(dx == "Control", 1, 0),
+        BD = ifelse(dx == "BD", 1, 0),
+        MDD = ifelse(dx == "MDD", 1, 0),
+        SCZ = ifelse(dx == "SCZ", 1, 0)
+    ) %>% 
+    dplyr::select(-dx)
+
+
+## Correlate each covariate with each MCA dimension
+df_mca_covar_cor <- expand_grid(
+    covariate = df_covariates_dxDummy %>% dplyr::select(-sample) %>% colnames,
+    dimension = df_ind_loadings %>% dplyr::select(-sample) %>% colnames
+) %>% 
+    mutate(
+        pearsons_r = map2(
+            .x = covariate,
+            .y = dimension,
+            .f = ~ cor.test(df_covariates_dxDummy[[.x]], df_ind_loadings[[.y]])$estimate
+        ),
+        p_val = map2(
+            .x = covariate,
+            .y = dimension,
+            .f = ~ cor.test(df_covariates_dxDummy[[.x]], df_ind_loadings[[.y]])$p.value
+        )
+    ) %>% 
+    unnest(cols = c(pearsons_r, p_val)) %>% 
+    mutate(p_adj = p.adjust(p_val, method = "fdr"))
+```
+
+## Save
+
+```{r save}
+save(df_var_loadings, df_ind_loadings,
+     file = paste0(analysis_objects_dir, "drug_MCA_results.Rdata")
+)
+```

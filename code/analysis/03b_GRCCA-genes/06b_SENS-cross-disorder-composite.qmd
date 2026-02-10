@@ -1,0 +1,403 @@
+---
+title: "06b_SENS-cross-disorder-composite"
+author: "Rachel Smith"
+format: html
+editor: visual
+---
+
+# Run GRCCA including different diagnostic groups
+
+Assesses the extent to which GRCCA results across SCZ, BD, and MDD are related. This script loads the results from GRCCA runs including BD-only, MDD-only, and "composite" case.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+base_dir <- "~/Documents/PhD/projects/sgacc_wgcna_grcca/"
+scripts_dir <- paste0(base_dir, "scripts/")
+figures_dir <- paste0(base_dir, "outputs/figures/response_to_reviewers/round2/")
+
+# Create figures directory if it doesn't exist
+if(!dir.exists(figures_dir)) dir.create(figures_dir, recursive = TRUE)
+```
+
+## Setup
+
+```{r load_data}
+source(paste0(base_dir, "scripts/load_WGCNA_res.R"))
+library(ggsci)
+library(ggpubr)
+library(GGally)
+library(ComplexUpset)
+```
+
+## Load single disorder and composite case GRCCA results
+
+```{r load_grcca}
+## Identify analysis directories for separate diagnosis runs
+diagnosis_runs <- c("BD", "MDD") #"BDMDD")
+project_dirs <- paste0("08Mar2024_GENES_qSVAgeSexRaceGC_sft3_minSize40_cutHeight0.98_Control", 
+                       diagnosis_runs, 
+                       "_8MCA_regressBrainWeight_withGray/")
+cca_dir <- paste0(base_dir, "RCCA_toolkit/GENES/", project_dirs)
+
+
+## Load GRCCA results for each
+analysis_type <- "grcca"
+VARx <- "0.1_1"
+l_grcca_res <- 
+    map(
+        .x = cca_dir,
+        .f = ~ f_load_cca_res(
+            cca_directory = .x,
+            level = "gene",
+            analysis_type = analysis_type,
+            mu = 0.1,
+            VARx = VARx,
+            include_Cmat = FALSE,
+            rename_covariates = FALSE,
+            all_effects = TRUE
+        )
+    )
+names(l_grcca_res) <- diagnosis_runs
+
+
+## Load composite analysis results
+project_dirs <- paste0("26Sept2025_COMPOSITE_sft3_minSize40_cutHeight0.98/")
+cca_dir <- paste0(base_dir, "RCCA_toolkit/GENES/", project_dirs)
+analysis_type <- "grcca"
+VARx <- "0.1_1"
+l_grcca_res_comp <- f_load_cca_res(
+    cca_directory = cca_dir,
+    level = "gene",
+    analysis_type = analysis_type,
+    mu = 0.1,
+    VARx = VARx,
+    include_Cmat = FALSE,
+    rename_covariates = FALSE,
+    all_effects = FALSE
+)
+#l_grcca_res_comp$x_res %>% left_join(df_ensembl_to_symbol)
+
+
+## Combine with actual model (all diagnostic groups) results
+load(paste0(base_dir, "outputs/objects/GRCCA_results.Rdata")) # df_lvs, df_results, df_y_res, df_x_res, df_rx_expr_cor
+
+
+## Set analysis order (for plotting)
+analysis_order <- c("Actual", "BD", "MDD", "Composite")
+```
+
+## Figure R3C3A | Cross-disorder model significance
+
+```{r FigR3C3A.plot, fig.width=6.5, fig.height=2.5}
+## Combine model significance metrics across runs
+df_xdx_res <- map(
+    .x = l_grcca_res, # BD & MDD
+    .f = ~ .x$model_results
+) %>% 
+    list_rbind(names_to = "Analysis") %>%
+    bind_rows(df_results %>% mutate(Analysis = "Actual")) %>% # Original analysis (SCZ, BD, MDD)
+    bind_rows(l_grcca_res_comp$model_results %>% mutate(Analysis = "Composite")) %>% # Composite case
+    
+    # Format for plotting
+    mutate(Analysis = factor(Analysis, levels = analysis_order)) %>%
+    group_by(Analysis) %>% 
+    mutate(best_mod = ifelse(pval == min(pval), "black", "grey")) %>% 
+    ungroup
+
+
+# Plot
+df_xdx_res %>% 
+    ggplot(aes(x = factor(varx), y = -log10(pval))) +
+    geom_hline(yintercept = -log10(0.005), lty = 2) +
+    geom_segment(aes(y = 0, yend = -log10(pval), color = Analysis),
+                 position = position_dodge(width = 0.5)) +
+    geom_point(aes(size = correl, fill = Analysis, color = I(best_mod)),
+              shape = 21, position = position_dodge(width = 0.5)) +
+    
+    # plot aesthetics
+    scale_fill_nejm() +
+    scale_color_nejm() +
+    scale_size_continuous(range = c(0.1, 4), name = "X-Y LV cor") +
+    labs(x = "X variance explained", y = "-log10(model P value)",
+         title = "A | Cross-disorder model comparison") +
+    theme(
+        legend.title = element_text(margin = margin(t = -5)),
+        legend.margin = margin(l = -10)
+    )
+
+
+## Save plot
+map(
+    .x = c(".png", ".pdf"),
+    .f = ~ ggsave(paste0(figures_dir, "R3C3A.cross_disorder_model_results", .x), width = 6.5, height = 2.5)
+)
+```
+
+## Figure R3C3B | Cross-disorder covariate (Y) results
+
+```{r FigR3C3B.plot, fig.width=2.5, fig.height=3.7}
+## Correlate Y res (** need to negate BD&MDD **)
+covariate_order <- c(
+    "SCZ", "BD", "MDD",
+    "Composite\ncase",
+    paste0("Dim ", 1:8)
+)
+df_xdx_yres <- map(
+    .x = l_grcca_res, 
+    .f = ~ .x$y_res
+) %>% 
+    list_rbind(names_to = "Analysis") %>%
+    bind_rows(df_y_res %>% mutate(Analysis = "Actual")) %>% 
+    bind_rows(l_grcca_res_comp$y_res %>% 
+                  mutate(Analysis = "Composite") %>% 
+                  mutate(covariate = ifelse(covariate == "dx", "Composite\ncase", covariate))
+              ) %>% 
+    mutate(Analysis = factor(Analysis, levels = analysis_order)) %>%
+    mutate(
+        significant = ifelse(p_adj < 0.05 & abs(z_score) > 2, "black", "grey"),
+        covariate = factor(covariate, levels = rev(covariate_order))
+    ) %>% 
+    
+    # negate covariate results for BD (to get everything in the same direction)
+    mutate(pearsons_r = ifelse(Analysis == "BD", -pearsons_r, pearsons_r)) %>% 
+    mutate(type = ifelse(str_detect(covariate, "Dim"), "tox", "main"))
+
+# Plot
+df_xdx_yres %>% 
+    ggplot(aes(x = pearsons_r, y = covariate)) +
+    geom_segment(aes(x = 0, xend = pearsons_r, color = Analysis),
+                 position = position_dodge(width = 0.5)) +
+    geom_point(aes(size = -log10(p_adj + 10^-100), fill = Analysis, color = I(significant)), 
+               position = position_dodge(width = 0.5), shape = 21) +
+    geom_vline(xintercept = 0, color = "gray", linewidth = 0.5) +
+    
+    # Facet by covariate type
+    facet_wrap(vars(type), scales = "free_y", ncol = 1) +
+    force_panelsizes(rows = c(4, 8)) +
+    
+    # Plot aesthetics
+    scale_fill_nejm(guide = "none") +
+    scale_color_nejm(guide = "none") +
+    scale_size_continuous(range = c(0.5, 5), name = "-log10(FDR)") +
+    coord_cartesian(clip = "off") +
+    labs(x = "Structure correlation (ry)", y = NULL,
+         title = "B | Covariate results") +
+    theme(
+        strip.text = element_blank(),
+        panel.spacing = unit(0.5, "cm"),
+        legend.position = c(0.60, 0.20),
+        legend.key.size = unit(0.25, "cm"),
+        legend.title = element_text(margin = margin(t = -2))
+        #legend.text = element_text(size = 5)
+    )
+
+
+## Save
+map(
+    .x = c(".png", ".pdf"),
+    .f = ~ ggsave(paste0(figures_dir, "R3C3B.cross_disorder_covariate_results", .x), width = 2.5, height = 3.7)
+)
+```
+
+## Figure R3C3C | Gene-level comparison (correlation)
+
+```{r FigR3C3C.plot, fig.width=4.0, fig.height=3.5}
+## Gene X res
+df_xdx_xres <- map(
+    .x = l_grcca_res, # BD & MDD
+    .f = ~ .x$x_res
+) %>% 
+    list_rbind(names_to = "Analysis") %>%
+    bind_rows(l_grcca_res_comp$x_res %>% mutate(Analysis = "Composite")) %>% # Composite case
+    left_join(df_ensembl_to_symbol) %>% # Add gene & module info
+    left_join(df_modules_filt %>% dplyr::select(-c(mod_set, color)), by = join_by(ensembl_gene_id)) %>%
+    bind_rows(df_x_res %>% mutate(Analysis = "Actual")) %>% # Original results (SCZ, BD, MDD)
+    mutate(
+        Analysis = factor(Analysis, levels = analysis_order)
+    )
+    
+
+## Set x- and y-axis limits
+max_r <- df_xdx_xres %>% pull(pearsons_r) %>% abs %>% max
+global_limits <- c(-max_r - 0.05, max_r + 0.05)
+
+
+## Write function for lower plots (smaller points + line of best fit)
+lower_plot_fn <- function(data, mapping, ...) {
+    ggplot(data = data, mapping = mapping) +
+        geom_point(size = 0.25, alpha = 0.6) +
+        geom_smooth(method = "lm", color = "maroon", linewidth = 0.5) +
+        coord_cartesian(xlim = global_limits, ylim = global_limits)
+}
+
+## Plot
+df_xdx_xres %>% 
+    arrange(Analysis) %>% 
+    pivot_wider(names_from = Analysis, id_cols = ensembl_gene_id, values_from = pearsons_r) %>%
+    dplyr::select(-ensembl_gene_id) %>% 
+    
+    ggpairs(
+        
+        # Make the point size smaller
+        lower = list(
+            continuous = lower_plot_fn
+        ),
+        
+        # Include a line of best fit
+        diag = list(
+            continuous = wrap("densityDiag")
+        ),
+        upper = list(
+            continuous = wrap("cor", size = 3)
+        )
+        
+    ) +
+    
+    # Plot aethestics
+    labs(
+        title = "C | Pairwise relationships across gene results"
+    ) +
+    theme(axis.text = element_text(size = 8))
+
+
+## Save plot
+map(
+    .x = c(".png", ".pdf"),
+    .f = ~ ggsave(paste0(figures_dir, "R3C3C.cross_disorder_gene_corr", .x), width = 4.0, height = 3.5)
+)
+```
+
+## Figure R3C3D | Gene-level overlaps (after threshold for significance)
+
+```{r FigR3C3D.plot, fig.width=6.5, fig.height=3}
+## Format data for upset plot
+df_xres_upset <- df_xdx_xres %>%
+    
+    # For each diagnosis, create logical column indicating if this gene is significant or not
+    mutate(significant = ifelse(significant == 1, TRUE, FALSE)) %>% 
+    arrange(Analysis) %>% 
+    pivot_wider(id_cols = ensembl_gene_id, names_from = Analysis, values_from = significant) %>% 
+    
+    # remove genes that weren't significant in any analysis
+    filter(!(Actual == FALSE & BD == FALSE & MDD == FALSE & Composite == FALSE))
+
+## Upset plot
+p <- upset(
+    df_xres_upset, 
+    analysis_order,
+    base_annotations = list(
+        "Intersection size" = intersection_size(
+            text = list(size = 3)
+        )
+    ),
+    queries = list(
+        upset_query(set = "Actual", color = pal_nejm()(1), fill = pal_nejm()(1)),
+        upset_query(set = "BD", color = pal_nejm()(2)[2], fill = pal_nejm()(2)[2]),
+        upset_query(set = "MDD", color = pal_nejm()(3)[3], fill = pal_nejm()(3)[3]),
+        upset_query(set = "Composite", color = pal_nejm()(4)[4], fill = pal_nejm()(4)[4])
+    )
+) +
+    labs(x = NULL, title = "D | Shared significant genes across analyses") +
+    theme(
+        plot.title = element_text(face = "bold", size = 11),
+        axis.title = element_text(size = 10),
+        axis.text = element_text(size = 9)
+    )
+
+print(p)
+
+## Save
+map(
+    .x = c(".png", ".pdf"),
+    .f = ~ ggsave(paste0(figures_dir, "R3C3D.cross_disorder_gene_upset", .x), width = 6.5, height = 3)
+)
+```
+
+## Stats
+
+```{r stats}
+## Stats: run hypergeometric tests across all combinations
+l_sig_genes <- df_xdx_xres %>%
+    filter(significant == 1) %>%
+    group_split(Analysis) %>%
+    map( ~ pull(.x, ensembl_gene_id)) %>%
+    set_names(analysis_order)
+
+df_hypergeometric_res <- expand_grid(
+    analysis1 = analysis_order,
+    analysis2 = analysis_order
+) %>% 
+    filter(analysis1 != analysis2) %>%
+    group_by(grp = paste0(pmin(analysis1, analysis2), "_", pmax(analysis1, analysis2))) %>% 
+    slice(1) %>%
+    ungroup %>% 
+    dplyr::select(-grp) %>% 
+    mutate(
+        hypergeometric_res = map2(
+            .x = .$analysis1,
+            .y = .$analysis2,
+            .f = ~ f_hypergeometric(gene_list1 = l_sig_genes[[.x]], 
+                                    gene_list2 = l_sig_genes[[.y]],
+                                    gene_universe = ensembl_gene_ids
+            )
+        ),
+        p_value = map(hypergeometric_res, ~ .x$p_value),
+        odds_ratio = map(hypergeometric_res, ~ .x$odds_ratio)
+    ) %>% 
+    unnest(cols = c(p_value, odds_ratio))
+
+df_hypergeometric_res %>% filter(p_value > 0.05)
+
+
+## Identify overlap genes
+intersect(l_sig_genes$Actual, l_sig_genes$Composite)
+intersect(l_sig_genes$Actual, l_sig_genes$MDD)
+intersect(l_sig_genes$Actual, l_sig_genes$BD)
+shared <- intersect(intersect(l_sig_genes$Actual, l_sig_genes$Composite), intersect(l_sig_genes$BD, l_sig_genes$MDD))
+
+
+df_xdx_xres %>% filter(ensembl_gene_id %in% shared)
+```
+
+## Composite case GSEA
+
+```{r composite_gsea}
+### Get ranked gene list ###
+my_grcca_ranked <- df_xdx_xres %>% 
+    filter(Analysis == "BD") %>% 
+    arrange(-pearsons_r) %>% 
+    dplyr::select(ensembl_gene_id, pearsons_r) %>% 
+    deframe
+
+
+### Cell-type GSEA ###
+df_grcca_fgsea_cell <- fgsea(pathways = cell_types, 
+                             stats = my_grcca_ranked, 
+                             eps = 0
+)  %>% 
+    as_tibble() %>% 
+    dplyr::rename("cell_type" = "pathway") %>% 
+    arrange(-abs(NES))
+
+
+### GO GSEA ###
+df_grcca_fgsea_go <- fgsea(pathways = go_pathways, 
+                           stats = my_grcca_ranked, 
+                           eps = 0
+) %>% 
+    as_tibble() %>% 
+    dplyr::rename("go_id" = "pathway") %>% 
+    arrange(-abs(NES)) %>% 
+    left_join(df_go_terms) %>% # add names of GO terms
+    dplyr::select(go_id, term, ontology, everything())
+
+
+### Benchmark lists ###
+df_grcca_fgsea_benchmark <- fgsea(pathways = benchmarking_lists, 
+                                  stats = my_grcca_ranked, 
+                                  eps = 0
+) %>% 
+    as_tibble() %>% 
+    dplyr::rename("benchmark_list" = "pathway") %>% 
+    arrange(-abs(NES))
+```

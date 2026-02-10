@@ -1,0 +1,144 @@
+---
+title: "02a_GRCCA-transcript-results-full"
+author: "Rachel Smith"
+format: html
+editor: visual
+---
+
+# Load transcript-level GRCCA results (FULL)
+
+Load results for all transcripts included, not subset by gene-level results.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+base_dir <- "~/Documents/PhD/projects/sgacc_wgcna_grcca/"
+figures_dir <- paste0(base_dir, "outputs/figures/supplement/")
+analysis_objects_dir <- paste0(base_dir, "outputs/objects/")
+
+# Create figures directory if it doesn't exist
+if(!dir.exists(figures_dir)) dir.create(figures_dir, recursive = TRUE)
+```
+
+## Setup
+
+```{r load_data}
+source(paste0(base_dir, "scripts/load_WTCNA_res.R"))
+library(ggpubr)
+```
+
+## Load data
+
+```{r load_grcca}
+# 08Mar2024_TRANSCRIPTS_qSVAgeSexRaceGC_CVq1_sft2_minSize35_cutHeight0.988_ControlBDMDDSCZ_8MCA_ControlBDMDDSCZ_regressBrainWeight_WITHGRAY
+# 08Mar2024_TRANSCRIPTS_qSVAgeSexRaceGC_CVq1_sft2_minSize35_cutHeight0.988_ControlBDMDDSCZ_8MCA_regressDim2_WITHGRAY
+
+## Identify CCA directory
+dx_groups_to_analyze <- c("Control", "BD", "MDD", "SCZ") # select diagnostic groups of interest
+n_mca_dim <- 8
+type <- "OVERALLsubs/"
+project_dir <- paste0(
+    prefix, # date & preprocessing info
+    "_sft", soft_power, "_minSize", minimum_size, "_cutHeight", tree_cut_height, "_", # WTCNA parameters
+    paste0(dx_groups_to_analyze, collapse = ""), "_", # diagnostic groups included
+    n_mca_dim, "MCA_regressDim2_", # covariates included
+    # "broadRareSCZBDMDDASD_sigGRCCAfdr0_05/" # define subset of transcripts included (based on gene-level results)
+    "WITHGRAY/" # includes all transcripts
+)
+cca_dir <- paste0(base_dir, "RCCA_toolkit/", type, project_dir)
+
+## Read in GRCCA analysis results
+analysis_type <- "grcca"
+VARx <- "0.1_1"
+l_grcca_res <- f_load_cca_res(
+    cca_directory = cca_dir,
+    level = "transcript",
+    analysis_type = analysis_type,
+    mu = 0.1,
+    lambda = "Nfeat",
+    VARx = VARx,
+    include_Cmat = TRUE,
+    rename_covariates = TRUE
+)
+
+## Assign results to tibbles; don't need to negate everything because SCZ is already positive
+df_results_ALLtranscripts <- l_grcca_res$model_results
+df_lvs_ALLtranscripts <- l_grcca_res$latent_variables # %>% mutate_at(vars(c(lvx, lvy)), ~ -.x)
+df_y_res_ALLtranscripts <- l_grcca_res$y_res # %>% mutate_at(vars(c(weight, z_score, pearsons_r)), ~ -.x)
+df_x_res_ALLtranscripts <- l_grcca_res$x_res %>%
+    # mutate_at(vars(c(weight, z_score, pearsons_r)), ~ -.x) %>%
+    left_join(df_transcript_to_gene, by = join_by(ensembl_transcript_id)) %>%
+    left_join(df_modules_filt %>% dplyr::select(-c(mod_set, color)), by = join_by(ensembl_transcript_id)) %>%
+    dplyr::select(ensembl_transcript_id, transcript_symbol, module, everything()) %>%
+    mutate(transcript_symbol = ifelse(is.na(transcript_symbol), ensembl_transcript_id, transcript_symbol)) %>%
+    distinct()
+```
+
+## Save for plotting
+
+```{r save}
+# Figures
+save(df_results_ALLtranscripts, df_lvs_ALLtranscripts, df_y_res_ALLtranscripts, df_x_res_ALLtranscripts,
+    file = paste0(analysis_objects_dir, "GRCCA_transcript_results_FULL.Rdata")
+)
+```
+
+## Figure S13 | Transcript model results (all transcripts)
+
+### A | Optimal model for all transcripts
+
+```{r FigS13a.plot, fig.width=6.5, fig.height=5}
+df_results_ALLtranscripts %>% 
+    mutate(significant = ifelse(pval == 0.001, "yes", "no")) %>%
+    
+    ggplot(aes(x = factor(varx*100), y = -log10(pval))) +
+    geom_segment(aes(y = 0, yend = -log10(pval))) +
+    geom_point(aes(size = correl, shape = significant, fill = -log10(pval))) +
+    geom_hline(yintercept = 0, color = "darkgrey") +
+    scale_shape_manual(values = c("yes" = 23, "no" = 21), guide = "none") +
+    scale_fill_gradient(low = "white", high = "#67001F", limits = c(0, 3), guide = "none") +
+    guides(size = guide_legend(title = "X-Y LV correlation", override.aes = list(shape = 21))) +
+    coord_cartesian(clip = "off") +
+    labs(x = "X variance explained (%)", y = "-log10(model p-value)",
+         title = "A | Optimal variance explained \nby model (all transcripts)"
+    ) +
+    theme(
+        legend.position = c(0.55, 0.75),
+        legend.key.size = unit(0.1, "cm")
+    )
+
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(figures_dir, "S13A.optimal_model_all_transcripts", .x), width = 6.5, height = 5)
+)
+```
+
+### B | Covariate correlations with the latent variable (all transcripts)
+
+```{r FigS13b.plot, fig.width=6.5, fig.height=5}
+df_y_res_ALLtranscripts %>% 
+    mutate(significant = ifelse(abs(z_score) >= 2 & p_adj < 0.05, "*", "")) %>% 
+    
+    ggplot(aes(x = pearsons_r, y = reorder(covariate, pearsons_r))) +
+    geom_point(aes(size = -log10(p_adj), fill = pearsons_r), shape = 21) +
+    geom_vline(xintercept = 0, color = "darkgrey") +
+    #geom_text(aes(label = significant), size = 6, vjust = 0.75, hjust = -1.5, color = "black") +
+    scale_fill_gradientn(colors = gene_weight_color_scale, limits = c(-1, 1), guide = "none") +
+    scale_size_continuous(range = c(2, 6)) +
+    guides(size = guide_legend(title = "-log10(FDR)")) +
+    coord_cartesian(clip = "off") +
+    xlim(c(-1, 1)) +
+    labs(y = NULL, x = expression("Structure correlation (" * italic(r)[y] * ")"), 
+         title = "B | Covariate structure \ncorrelations (all transcripts)") +
+    theme(legend.position = c(0.05, 0.55), 
+          legend.box = "horizontal",
+          #legend.justification = "center",
+          legend.key.size = unit(0.1, 'cm')
+          #legend.key.height = unit(0.29, "cm"),
+          #legend.key.width = unit(0.30, "cm")
+    )
+
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(figures_dir, "S13B.covariate_correlations_all_transcripts", .x), width = 6.5, height = 5)
+)
+```

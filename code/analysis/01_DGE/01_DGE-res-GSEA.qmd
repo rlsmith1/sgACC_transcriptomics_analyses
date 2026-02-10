@@ -1,0 +1,189 @@
+---
+title: "01_DGE-res-GSEA"
+author: "Rachel Smith"
+format: html
+editor: visual
+---
+
+# Gene ontology and gene set enrichment analysis of current study DEGS
+
+Run GSEA on limma DGE results. Note that the input data (cell types, GO, and risk gene benchmark lists) are loaded & collated in `setup.R`.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+base_dir <- "~/Documents/PhD/projects/sgacc_wgcna_grcca/"
+scripts_dir <- paste0(base_dir, "scripts/")
+analysis_objects_dir <- paste0(base_dir, "outputs/objects/")
+figures_dir <- paste0(base_dir, "outputs/figures/Fig4_DGEres/")
+
+# Create figures directory if it doesn't exist
+if(!dir.exists(figures_dir)) dir.create(figures_dir, recursive = TRUE)
+```
+
+## Load data
+
+```{r load_data}
+source(paste0(base_dir, "code/analysis/setup.R")) # loads cell_types, go_pathways, benchmarking_lists
+source(paste0(base_dir, "code/analysis/load_genes.R")) # helper script
+load(paste0(base_dir, "objects/DE_results.Rdata")) # df_limma_res (generated in 00_DGE-analysis-limma.R)
+```
+
+## Get ranked gene list for GSEA
+
+```{r rank_genes}
+my_degs_ranked <- df_limma_res %>% 
+    arrange(-log_fc) %>%
+    dplyr::select(ensembl_gene_id, log_fc) %>%
+    # arrange(-t) %>%
+    # dplyr::select(ensembl_gene_id, t) %>% 
+    deframe
+```
+
+## Cell type
+
+```{r cell_type}
+df_de_fgsea_cell <- fgsea(pathways = cell_types, 
+                               stats = my_degs_ranked, 
+                               eps = 0
+)  %>% 
+    as_tibble() %>% 
+    dplyr::rename("cell_type" = "pathway") %>% 
+    arrange(-abs(NES))
+```
+
+## GO
+
+```{r go}
+df_de_fgsea_go <- fgsea(pathways = go_pathways, 
+                        stats = my_degs_ranked, 
+                        eps = 0
+) %>% 
+    as_tibble() %>% 
+    dplyr::rename("go_id" = "pathway") %>% 
+    arrange(-abs(NES)) %>% 
+    left_join(df_go_terms) %>% # add names of GO terms
+    dplyr::select(go_id, term, ontology, everything())
+```
+
+## Risk genes
+
+```{r risk_genes}
+df_de_fgsea_benchmark <- fgsea(pathways = benchmarking_lists, 
+                               stats = my_degs_ranked, 
+                               eps = 0
+) %>% 
+    as_tibble() %>% 
+    dplyr::rename("benchmark_list" = "pathway") %>% 
+    arrange(-abs(NES))
+```
+
+## Save
+
+```{r save}
+save(df_de_fgsea_cell, df_de_fgsea_go, df_de_fgsea_benchmark,
+     file = paste0(analysis_objects_dir, "DE_enrichment_benchmark_res.Rdata")
+)
+```
+
+## Figure 4D | DEG enrichment for GWAS results
+
+```{r Fig4d.prep}
+df_fig4d <- df_de_fgsea_benchmark %>% 
+    mutate(class = ifelse(str_detect(benchmark_list, "SCZ"), "SCZ", "other") %>% factor(levels = c("SCZ", "other"))) %>% 
+    mutate(benchmark_list = str_remove_all(benchmark_list, "SCZ|\\)|\\(") %>% 
+               str_trim %>% 
+               str_replace(", ", ",\n")
+    ) %>% 
+    mutate(label_color = ifelse(padj < 0.05, "white", "black")) %>% 
+    mutate(box_color = ifelse(padj < 0.05, "black", "transparent")) %>% 
+    mutate(label = round(NES, 2) %>% format(digits = 3))
+```
+
+```{r Fig4d.plot, width = 2.17, height = 1.75}
+df_fig4d %>% 
+    ggplot(aes(x = benchmark_list, y = 1)) +
+    geom_tile(aes(fill = NES, color = I(box_color)), width = 0.95, height = 0.95, linewidth = 0.75) +
+    geom_text(aes(label = label, color = I(label_color)), size = 2.75) +
+    facet_wrap(vars(class), scales = "free", nrow = 2) +
+    scale_fill_gradientn(colors = rev(brewer.rdbu(100)), limits = c(-1.58, 1.58)) +
+    guides(fill = guide_colorbar(title.hjust = 0.5, title.position = "left")) +
+    labs(x = NULL, y = NULL,
+         title = "D | Risk gene enrichment") +
+    theme(axis.text.y = element_blank(),
+          axis.ticks = element_blank(),
+          axis.line = element_blank(),
+          axis.text.x = element_text(margin = margin(t = -3)),
+          strip.background = element_rect(fill = "white", color = "black"),
+          legend.margin = margin(r = -15),
+          legend.position = "left",
+          legend.justification = "top",
+          legend.title = element_text(angle = 90),
+          legend.key.height = unit(0.65, "cm"),
+          legend.key.width = unit(0.15, "cm")
+    )
+
+# Save
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(figures_dir, "D.Risk_gene_enrichment", .x), width = 2.17, height = 1.75)
+)
+```
+
+## Figure 4E | GO enrichments of DEGs
+
+```{r Fig4e.prep}
+## Determine labels
+fig4e_labels <- c(
+    
+    ## BP
+    "adaptive immune response",
+    "inflammatory response",
+    #"positive regulation of tumor necrosis factor production",
+    #"positive regulation of interleukin-6 production",
+    "positive regulation of T cell proliferation",
+
+    ## MF
+    "MHC class II protein complex binding",
+    "extracellular matrix structural constituent",
+    "protein tyrosine kinase inhibitor activity",
+    
+    ## CC
+    "clathrin-coated endocytic vesicle membrane"
+)
+
+## Filter for terms of interest & assign labels
+df_fig4e <- df_de_fgsea_go %>% 
+    dplyr::filter(padj < 0.05) %>% 
+    mutate(direction = ifelse(NES < 0, "down", "up")) %>% 
+    group_by(direction) %>% 
+    mutate(label = ifelse(term %in% fig4e_labels, str_wrap(term, 25), ""))
+```
+
+```{r Fig4e.plot, fig.height = 3.5, fig.width = 4.34}
+df_fig4e %>%
+    ggplot(aes(x = padj, y = NES)) +
+    geom_hline(yintercept = 0, color = "gray") +
+    geom_point(aes(size = size, fill = NES), color = "gray", shape = 21) +
+    geom_text_repel(aes(label = label), size = 2.5, force = 20,
+                    box.padding = 1.0, min.segment.length = 0, max.overlaps = 50) +
+    facet_wrap(vars(ontology), nrow = 1) +
+    scale_fill_gradientn(colors = rev(brewer.rdbu(100)), limits = c(-2.5, 2.5), guide = "none") +
+    scale_size_continuous(range = c(2, 6)) +
+    scale_x_reverse(breaks = c(0, 0.03, 0.05)) +
+    guides(size = guide_legend(title = "n genes in path", title.hjust = 0.5, title.position = "top")) +
+    coord_cartesian(clip = "off") +
+    labs(x = "Enrichment FDR", y = "NES",
+         title = "E | Functional pathway enrichments") +
+    theme(legend.position = c(0.25, 0.75),
+          legend.direction = "horizontal",
+          legend.justification = "center",
+          title.justification = "center",
+          legend.key.size = unit(0.3, "cm")
+    )
+
+# Save
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(figures_dir, "E.DEG_GO_enrichment", .x), width = 4.34, height = 3.5)
+)
+```
