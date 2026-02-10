@@ -13,16 +13,15 @@ The scripts directories are organized as follows:
 * **01_DGE** - Run standard differential gene expression analysis using limma-voom; characterize results enrichment using GSEA
 * **02_WGCNA** - Run weighted gene co-expression network analysis (WGCNA); characterize module enrichments; run standard module eigengene analysis to identify module-covariate associations
 * **03a_CCA-toolkit-setup** - Format and export data to run GRCCA on the cluster (example code to run the analysis can be found in this folder as well as ~/RCCA_toolkit/cca_pls_toolkit_final)
-* **03b_GRCCA** - Read GRCCA results (generated on cluster using grcca_analysis.m); characterize enrichment of results using GSEA
-* **03c_RCCA-snesitivity** - Read RCCA results (generated on cluster using rcca_analysis.m); characterize results enrichment using GSEA and compare to GRCCA
-* **03d_GRCCA-transcripts** - Run WTCNA and GRCCA on transcript-level data (both on cluster); characterize enrichment of results using GSEA
-* **04_figures-markdown** - R markdown files to generate figures 1-5, as well as all supplementary figures
-* Other scripts (not organized into subfolder)
+* **03b_GRCCA** - Read GRCCA results (generated on cluster using grcca_analysis.m); characterize enrichment of results using GSEA; sensitivity analyses
+* **03c_GRCCA-transcripts** - Run WTCNA and GRCCA on transcript-level data (both on cluster); characterize enrichment of results using GSEA
+* Helper scripts (not organized into subfolder)
     - **load_genes.R** - Loads preprocessed gene-level data (run after 00_preprocessing but before 02_WGCNA)
     - **load_transcripts.R** - Loads preprocessed transcript-level data and gene ID mappings (run after 00_preprocessing but before 03d_GRCCA-transcripts)
     - **load_WGCNA_res.R** - Loads WGCNA module assignments, as well as data from load_genes.R (run after 02_WGCNA but before 03_CCA-toolkit-setup)
     - **load_WTCNA_res.R** - Loads WTCNA module assignments, as well as data from load_transcripts.R (run after 05_GRCCA-transcripts/00_case-control-WTCNA.R)
-    - **setup.R** - Loads all necessary packages, study covariate data, cell type data, gene ontology pathways, risk gene lists; sources functions in ~/functions; sets plot theme for figures in 04_figures_markdown
+    - **setup.R** - Loads all necessary packages, study covariate data, cell type data, gene ontology pathways, risk gene lists; sources functions in ~/functions; sets plot theme for figures in
+* ~/functions contains helper functions that are all loaded in setup.R
 -------------------------------------------------------------------
 
-Individual scripts are commented to describe their specific purpose. For any questions on code/implementation, please email corresponding author smith.rachel.lillian@gmail.com.
+Individual scripts are commented to describe their specific purpose. For any questions on code/implementation, please email corresponding author at smith.rachel.lillian@gmail.com.
