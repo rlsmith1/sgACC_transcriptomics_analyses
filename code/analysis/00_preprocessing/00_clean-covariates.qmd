@@ -58,8 +58,8 @@ technical_covariates <- c("mapped_percent", "gc_percent", "five_prime_three_prim
 biological_covariates <- c("age_death", "sex_at_birth", "race", "bmi", "height", "weight",
                            "marital_status", "manner_death", "education", 
                            "suicide", "brain_weight")
-drug_covariates <- c("smoker", "nicotine_cotinine", "alcohol", "opioids", "
-                     cannabinoids", "beta_blockers", "major_stimulants_cocaine_included",
+drug_covariates <- c("smoker", "nicotine_cotinine", "alcohol", "opioids",
+                      "beta_blockers", "major_stimulants_cocaine_included", #"cannabinoids",
                      "minor_stimulants", "anticholinergics", "antidepressants",
                      "anti_epileptics", "anti_histamines", "antipsychotics", 
                      "mood_stabilizers", "sedative_hypnotic_anxiolitics", "benzos",
@@ -117,7 +117,8 @@ df_complete_covariates2 <- df_complete_covariates %>%
     )
 
 ## Check what variables are included in both covariate tables
-shared_variables <- intersect(colnames(df_complete_covariates2), colnames(df_nirmala_covariates))
+shared_variables <- intersect(colnames(df_complete_covariates2), 
+                              colnames(df_nirmala_covariates))
 colnames(df_nirmala_covariates)[!(colnames(df_nirmala_covariates) %in% shared_variables)]
 ```
 
@@ -157,7 +158,7 @@ df_covariates_numeric <- df_covariates %>%
 ## Save
 
 ```{r save}
-save(df_covariates, df_covariates_numeric, 
-     file = paste0(base_dir, "objects/22Jan2025_covariates.Rdata")
-)
+# save(df_covariates, df_covariates_numeric, 
+#      file = paste0(base_dir, "objects/22Jan2025_covariates.Rdata")
+# )
 ```
