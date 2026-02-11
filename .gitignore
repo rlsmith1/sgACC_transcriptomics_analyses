@@ -1,9 +1,12 @@
 data/
 archive/
 code/analysis/archive/
+
 code/analysis/**
 !code/analysis/**/
 !code/analysis/**/*.qmd
+
+outputs/objects/*
 !outputs/objects/*.RDS
 !outputs/objects/*.Rdata
 !outputs/objects/*.RData
