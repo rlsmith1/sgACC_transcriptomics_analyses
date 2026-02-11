@@ -1,0 +1,264 @@
+---
+title: "02b. Load transcript-level GRCCA results (SUBSET)"
+author: "Rachel Smith"
+format: html
+editor: visual
+---
+
+Load transcript-level GRCCA results for transcripts included in the subset analysis (associated with risk genes or significant genes).
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+base_dir <- "~/Documents/PhD/projects/sgacc_wgcna_grcca/"
+```
+
+## Setup
+
+```{r load_data}
+source(paste0(base_dir, "scripts/load_WTCNA_res.R"))
+
+# Load GRCCA gene results for comparison (needed for Fig 5B)
+load(paste0(analysis_objects_dir, "GRCCA_results.Rdata")) # df_x_res
+df_x_res_genes <- df_x_res
+rm(list = "df_x_res")
+```
+
+## Load data
+
+```{r load_grcca}
+# 08Mar2024_TRANSCRIPTS_qSVAgeSexRaceGC_CVq1_sft2_minSize35_cutHeight0.988_ControlBDMDDSCZ_8MCA_ControlBDMDDSCZ_regressBrainWeight_WITHGRAY
+# 08Mar2024_TRANSCRIPTS_qSVAgeSexRaceGC_CVq1_sft2_minSize35_cutHeight0.988_ControlBDMDDSCZ_8MCA_regressDim2_WITHGRAY
+
+## Identify CCA directory
+dx_groups_to_analyze <- c("Control", "BD", "MDD", "SCZ") # select diagnostic groups of interest
+n_mca_dim <- 8
+type <- "OVERALLsubs/"
+project_dir <- paste0(
+    prefix, # date & preprocessing info
+    "_sft", soft_power, "_minSize", minimum_size, "_cutHeight", tree_cut_height, "_", # WTCNA parameters
+    paste0(dx_groups_to_analyze, collapse = ""), "_", # diagnostic groups included
+    n_mca_dim, "MCA_regressDim2_", # covariates included
+    "broadRareSCZBDMDDASD_sigGRCCAfdr0_05/" # define subset of transcripts included (based on gene-level results)
+    # "WITHGRAY" # includes all transcripts
+)
+cca_dir <- paste0(base_dir, "RCCA_toolkit/", type, project_dir)
+
+## Read in GRCCA analysis results
+analysis_type <- "grcca"
+VARx <- "0.1_1"
+l_grcca_res <- f_load_cca_res(
+    cca_directory = cca_dir,
+    level = "transcript",
+    analysis_type = analysis_type,
+    mu = 0.1,
+    lambda = "Nfeat",
+    VARx = VARx,
+    include_Cmat = TRUE,
+    rename_covariates = FALSE
+)
+
+## Assign results to tibbles; negate everything so SCZ is positive
+df_results_transcripts <- l_grcca_res$model_results
+df_lvs_transcripts <- l_grcca_res$latent_variables %>% mutate_at(vars(c(lvx, lvy)), ~ -.x)
+df_y_res_transcripts <- l_grcca_res$y_res %>% mutate_at(vars(c(weight, z_score, pearsons_r)), ~ -.x)
+df_x_res_transcripts <- l_grcca_res$x_res %>%
+    mutate_at(vars(c(weight, z_score, pearsons_r)), ~ -.x) %>%
+    left_join(df_transcript_to_gene, by = join_by(ensembl_transcript_id)) %>%
+    left_join(df_modules_filt %>% dplyr::select(-c(mod_set, color)), by = join_by(ensembl_transcript_id)) %>%
+    dplyr::select(ensembl_transcript_id, transcript_symbol, module, everything()) %>%
+    mutate(transcript_symbol = ifelse(is.na(transcript_symbol), ensembl_transcript_id, transcript_symbol)) %>%
+    distinct()
+```
+
+## Save for plotting
+
+```{r save}
+# Figures
+save(df_results_transcripts, df_lvs_transcripts, 
+     df_y_res_transcripts, df_x_res_transcripts,
+    file = paste0(objects_dir, "GRCCA_transcript_results.Rdata")
+)
+```
+
+## Plots
+
+### Figure S13C \| Optimal model for subset transcripts
+
+```{r FigS13c.plot, fig.width=6.5, fig.height=5}
+df_results_transcripts %>% 
+    mutate(significant = ifelse(pval == 0.001, "yes", "no")) %>% 
+    ggplot(aes(x = factor(varx*100), y = -log10(pval))) +
+    geom_segment(aes(y = 0, yend = -log10(pval))) +
+    geom_point(aes(size = correl, shape = significant, fill = -log10(pval))) +
+    geom_hline(yintercept = 0, color = "darkgrey") +
+    scale_shape_manual(values = c("yes" = 23, "no" = 21), guide = "none") +
+    scale_fill_gradient(low = "white", high = "#67001F", limits = c(0, 3), guide = "none") +
+    guides(size = guide_legend(title = "X-Y LV correlation", override.aes = list(shape = 21))) +
+    coord_cartesian(clip = "off") +
+    labs(x = "X variance explained (%)", y = "-log10(model p-value)",
+         title = "C | Optimal variance explained \nby model (subset transcripts)"
+    ) +
+    theme(
+        legend.position = c(0.55, 0.75),
+        legend.key.size = unit(0.1, "cm")
+    )
+
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supp_figures_dir, "S13C.optimal_model_subset_transcripts", .x),
+                width = 6.5, height = 5)
+)
+```
+
+### Figure S5A \| Covariate structure correlations (ry)
+
+```{r Fig5a.plot, fig.width=2.5, fig.height=2}
+df_y_res_transcripts %>% 
+    mutate(significant = ifelse(abs(z_score) >= 2 & p_adj < 0.05, "*", "")) %>% 
+    
+    ggplot(aes(x = pearsons_r, y = reorder(covariate, pearsons_r))) +
+    geom_vline(xintercept = 0, color = "darkgrey") +
+    geom_point(aes(size = -log10(p_adj), fill = pearsons_r), shape = 21) +
+    scale_fill_gradientn(colors = gene_weight_color_scale, limits = c(-1, 1), guide = "none") +
+    scale_size_continuous(range = c(2, 6)) +
+    guides(size = guide_legend(title = "-log10(FDR)")) +
+    coord_cartesian(clip = "off") +
+    xlim(c(-1, 1)) +
+    labs(y = NULL, x = expression("Structure correlation (" * italic(r)[y] * ")"), 
+         title = "A | Covariate structure correlations") +
+    theme(legend.position = c(0.04, 0.55), 
+          legend.box = "horizontal",
+          #legend.justification = "center",
+          #legend.key.size = unit(0.2, 'cm')
+          legend.key.size = unit(0.025, "cm")
+    )
+
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(figures_dir, "5A.covariate_structCor", .x), 
+                width = 2.5, height = 2)
+)
+```
+
+### Figure S5B \| Correlation with gene-level GRCCA results
+
+```{r Fig5.genes_to_label}
+## Identify genes to label in panel B, and plot in panel C
+fig5_sig_genes <- c("CSMD1", "PTK2B") # "SLC4A10"
+fig5_non_sig_genes <- c("ARHGAP44", "CSDE1") # "SOX2-OT" "HMOX2"
+
+## Identify all SCZ risk genes across lists
+scz_risk_genes <- benchmarking_lists[names(benchmarking_lists)[str_detect(names(benchmarking_lists), "SCZ")]] %>%
+    unlist %>%
+    unique
+```
+
+```{r Fig5b.prep}
+## Combine gene & transcript-level gene weights, highlight SCZ risk genes for plot
+df_fig5b <- df_x_res_transcripts %>% 
+    #filter(!is.na(ensembl_gene_id)) %>% 
+    group_by(ensembl_gene_id) %>% 
+    summarise(pearsons_r = pearsons_r[which.max(abs(pearsons_r))], .groups = "drop") %>% 
+    dplyr::rename("transcript_res" = "pearsons_r") %>% 
+    
+    left_join(df_x_res_genes %>% 
+                  dplyr::select(ensembl_gene_id, gene_symbol, pearsons_r) %>% 
+                  dplyr::rename("gene_res" = "pearsons_r")
+    ) %>% 
+    
+    # highlight SCZ risk genes
+    mutate(
+        risk_gene = ifelse(ensembl_gene_id %in% scz_risk_genes, "yes", "no"),
+        #label = ifelse(risk_gene == "yes" & distance < 0.1 & abs(gene_res) > 0.1, gene_symbol, "")
+        label = ifelse(gene_symbol %in% c(fig5_sig_genes, fig5_non_sig_genes), gene_symbol, "")
+    ) %>% 
+    arrange(risk_gene)
+```
+
+```{r Fig5b.plot, fig.width=2.5, fig.height=2}
+df_fig5b %>% 
+    ggplot(aes(x = gene_res, y = transcript_res)) +
+    geom_abline(lty = 2) +
+    geom_hline(yintercept = 0, color = "gray") +
+    geom_vline(xintercept = 0, color = "gray") +
+    geom_point(aes(fill = gene_res + transcript_res, color = risk_gene, size = risk_gene), 
+               shape = 21, stroke = 0.25) +
+    geom_text_repel(aes(label = label), max.overlaps = 1000, 
+                    min.segment.length = 0, size = 2.5) +
+    geom_smooth(method = "lm", color = "black", linewidth = 0.25) +
+    guides(color = guide_legend(title = "SCZ risk gene?")) +
+    # xlim(c(-0.6, 0.6)) +
+    # ylim(c(-0.6, 0.6)) +
+    stat_cor(aes(label = after_stat(r.label)), label.sep = "\n", size = 3,
+             label.y.npc = "top") +
+    scale_fill_gradientn(colors = gene_weight_color_scale, 
+                         limits = c(-0.95, 0.95), guide = "none") +
+    scale_color_manual(values = c("yes" = "black", "no" = "transparent")) +
+    scale_size_manual(values = c("yes" = 1, "no" = 0.5), guide = "none") +
+    coord_cartesian(clip = "off") +
+    #scale_x_continuous(breaks = c(-0.2, 0, 0.2)) +
+    labs(x = expression("Gene " * italic(r)[x]), y = expression("Transcript " * italic(r)[x]),
+         title = "B | Gene vs transcript GRCCA results"
+    ) +
+    theme(legend.position = c(0.60, 0.11),
+          legend.key.size = unit(0.1, "cm"),
+          legend.title = element_text(size = 8, margin = margin(b = 0)),
+          legend.text = element_text(size = 6)
+    )
+
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(figures_dir, "5B.gene_vs_transcript_GRCCA_res", .x), 
+                width = 2.5, height = 2)
+)
+```
+
+### Figure S5C \| Directionality of transcripts associated with significant and non-significant risk genes
+
+```{r Fig5c.prep}
+## Set order
+fig5c_gene_order <- df_x_res_genes %>% 
+    filter(gene_symbol %in% c(fig5_sig_genes, fig5_non_sig_genes)) %>% 
+    arrange(-abs(pearsons_r)) %>% 
+    pull(gene_symbol)
+
+## Prep df for plotting
+df_fig5c <- df_x_res_transcripts %>% 
+    filter(gene_symbol %in% fig5c_gene_order) %>% 
+    mutate(
+        gene_symbol = factor(gene_symbol, levels = fig5c_gene_order),
+        significant = ifelse(p_adj < 0.05, "yes", "no"),
+        gene_sig = ifelse(gene_symbol %in% fig5_sig_genes, "significant", "non-significant")
+    )
+```
+
+```{r Fig5c.plot, fig.width=3.75, fig.height=4.15}
+df_fig5c %>%
+    #mutate(transcript_symbol = str_remove(transcript_symbol, "^.+-")) %>% 
+    
+    ggplot(aes(x = pearsons_r, y = reorder(transcript_symbol, pearsons_r))) +
+    geom_vline(xintercept = 0, color = "gray") +
+    geom_point(aes(fill = pearsons_r, size = -log10(p_adj), color = significant), shape = 21) +
+    facet_wrap(vars(gene_symbol), scales = "free_y") +
+    scale_fill_gradientn(colors = gene_weight_color_scale, 
+                         limits = c(-0.278, 0.278), guide = "none") +
+    scale_color_manual(values = c("yes" = "black", "no" = "gray"), guide = "none") +
+    scale_size_continuous(range = c(1, 4)) +
+    scale_y_discrete(labels = function(x) str_remove(x, "^.+-")) +
+    guides(size = guide_legend(title = "-log10(FDR)", title.position = "top")) +
+    coord_cartesian(clip = "off") +
+    labs(x = expression("Transcript " * italic(r)[x]), y = NULL,
+         title = expression("C | Transcript " * italic(r)[x] * " of SCZ risk genes")) +
+    theme(#legend.position = "bottom",
+        legend.position = c(0.95, 0.12),
+        legend.title = element_text(hjust = 0.5, margin = margin(b = 0)),
+        legend.justification = "center",
+        legend.margin = margin(l = -15)
+    )
+
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(figures_dir, "5C.directionality_of_transcripts", .x), 
+                width = 3.75, height = 4.15)
+)
+```

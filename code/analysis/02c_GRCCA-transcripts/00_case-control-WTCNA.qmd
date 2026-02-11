@@ -1,0 +1,229 @@
+---
+title: "00. Run WGCNA pipeline on transcripts"
+author: "Rachel Smith"
+format: html
+editor: visual
+---
+
+Select soft-thresholding power, calculate adjacency & TOM, cluster, and assign modules for transcripts.
+
+**NOTE: Run this script on an HPC cluster!!!**
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+base_dir <- "~/Documents/PhD/projects/sgacc_wgcna_grcca/"
+```
+
+## Setup
+
+```{r load_data}
+source(paste0(scripts_dir, "load_transcripts.R"))
+```
+
+## Select soft thresholding power
+
+```{r sft_plot}
+# Note: The actual SFT calculation is recommended to run on a cluster.
+# Loading pre-calculated SFT results.
+load(paste0(analysis_objects_dir, prefix2, "_SFT.RDS")) # (load from cluster)
+
+# scale-free topology fit index as a function of the soft-thresholding power
+p1 <- df_sft %>%
+  ggplot(aes(x = power, y = -sign(slope) * sft_r_sq)) +
+  geom_text(aes(label = power), size = 5) +
+
+  # geom_hline(yintercept = 0.8, lty = 2, color = "red") +
+  geom_hline(yintercept = 0.9, lty = 2, color = "red") +
+  xlab("Soft threshold (power)") +
+  ylab("Scale free topology model fit (signed R^2)")
+
+# Median connectivity as a function of the soft-thresholding power
+p2 <- df_sft %>%
+  ggplot(aes(x = power, y = median_k)) +
+  geom_text(aes(label = power), size = 5) +
+  geom_hline(yintercept = 100, lty = 2, color = "black") +
+  xlab("Soft threshold (power)") +
+  ylab("Median connectivity") # check that mean connectivity remains reasonably high (in the 100s) or above
+
+p1 + p2
+```
+
+## Calculate adjacency matrix, TOM, clustering
+
+This section contains code to be run on a high-performance cluster due to memory requirements.
+
+```{r cluster_code, eval=FALSE}
+# LOAD DATA
+base_dir <- "/Users/work/Library/CloudStorage/OneDrive-NationalInstitutesofHealth/projects/WGCNA/acsg_wgcna/"
+prefix2 <- "20230315_185samples_25kRAREtranscripts_vst_qSVA123567_MP_RNAbatch_Race_resids"
+load(paste0(objects_dir, prefix2, ".RDS")) # df_vsd_regress_rare
+load(paste0(pbjects_dir, prefix2, "_matrix.RDS")) # m_vsd_regress_t
+
+### Make sure to run on HPC ###
+
+# Sys.setenv('R_MAX_VSIZE'=32000000000)
+doParallel::registerDoParallel()
+
+# CONVERT REGRESSED VSD COUNTS TO TRANSPOSED MATRIX
+# m_vsd_regress_t <- df_vsd_regress_rare %>%
+#   pivot_wider(id_cols = sample,
+#               names_from = ensembl_transcript_id,
+#               values_from = resids) %>%
+#   as.data.frame %>% column_to_rownames("sample")
+#
+# rownames(m_vsd_regress_t) <- df_vsd_regress_rare %>% pull(sample) %>% unique
+# colnames(m_vsd_regress_t) <- df_vsd_regress_rare %>% pull(ensembl_transcript_id) %>% unique
+
+# save matrix for export to Biowulf
+# save(m_vsd_regress_t, file = paste0("objects/", prefix2, "_matrix.RDS")) # m_vsd_regress_t
+
+
+# SELECT SFT
+soft_power <- 3
+
+# CALCULATE CO-EXPRESSION SIMILARITY AND ADJACENCY
+adjacency <- adjacency(m_vsd_regress_t, type = "signed hybrid", power = soft_power)
+
+# TOPOLOGICAL OVERLAP MATRIX (TOM)
+TOM <- TOMsimilarity(adjacency, TOMType = "signed")
+rm(list = "adjacency")
+
+diss_TOM <- 1 - TOM
+rm(list = "TOM")
+
+# HIERARCHICAL CLUSTERING ON TOM
+gene_tree <- hclust(as.dist(diss_TOM))
+
+# plot the resulting clustering tree
+par(mfrow = c(1, 1))
+plot(gene_tree, labels = FALSE, xlab = "")
+```
+
+## Module assignment
+
+```{r module_assignment, eval=FALSE}
+# ASSIGN GENES TO MODULES AT DIFFERENT MINIMUM MODULE SIZE AND CUT HEIGHTS
+
+doParallel::registerDoParallel()
+
+df_combos <- expand_grid(
+  min_size = c(30, 40, 50),
+  cut_height = seq(from = 0.998, to = 0.999, by = 0.0001)
+)
+
+df_modules <- map2_dfr(
+  .x = df_combos$min_size,
+  .y = df_combos$cut_height,
+  .f = ~ tibble(
+    sft = soft_power,
+    min_size = .x,
+    cut_height = .y,
+    ensembl_transcript_id = unique(df_vsd_regress_rare$ensembl_transcript_id),
+    module = cutreeDynamic(
+      dendro = gene_tree,
+      distM = diss_TOM,
+      pamRespectsDendro = FALSE,
+      minClusterSize = .x,
+      cutHeight = .y
+    )
+  )
+) %>%
+  mutate(module = factor(module, levels = 0:(max(module))))
+
+df_modules %>%
+  dplyr::count(min_size, cut_height, module) %>%
+  print(n = nrow(.))
+
+
+# ASSIGN COLORS TO MODULES
+
+df_modules <- df_modules %>%
+  mutate(color = labels2colors(as.numeric(as.character(module)))) %>%
+  mutate(color = case_when(
+    color == "yellow" ~ "orange",
+    color == "lightcyan" ~ "darkcyan",
+    color == "lightgreen" ~ "seagreen",
+    color == "lightyellow" ~ "darkorange",
+    TRUE ~ color
+  ))
+
+# SAVE
+save(df_modules, file = paste0(objects_dir, prefix2, "_SIGNED_SFT", soft_power, "_MODS.RDS"))
+```
+
+## Plot results from cluster
+
+```{r plot_cluster_results}
+# PLOT MODULE SIZES
+soft_power <- 2
+load(paste0(objects_dir, prefix2, "_SIGNED_SFT", soft_power, "_MODS.RDS")) # df_modules
+
+# CALCULATE MODULE SIZES
+df_module_sizes <- df_modules %>%
+  group_by(sft, min_size, cut_height) %>%
+  dplyr::count(module)
+
+# where do we lose the gray module?
+df_module_sizes %>%
+  filter(module == 0) %>%
+  dplyr::count(min_size, cut_height) %>%
+  print(n = nrow(.))
+
+# PLOT
+df_module_sizes %>% # filter(cut_height != 1) %>%
+  ggplot(aes(x = module, y = n)) +
+  geom_col(width = 0.5) +
+  geom_point(shape = 21, size = 0.5) +
+  geom_vline(aes(xintercept = 21), lty = 2, color = "red") +
+  scale_x_discrete(breaks = seq(0, 50, 10)) +
+  facet_grid(min_size ~ cut_height) +
+  ggtitle(paste0("SFT", soft_power, " module assignments"))
+
+# TRY SFT = 2, mininum module size = 35, cut height = 0.987
+
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supp_figures_dir, "transcripts_sft", soft_power, "_module_sizes", .x), 
+                width = 12, height = 6)
+)
+```
+
+## Assign module colors & resave
+
+```{r assign_colors}
+# ASSIGN COLORS TO MODULES
+
+# select palette
+igv_palette <- paletteer_d("ggsci::default_igv")
+
+# remove light colors & gray
+igv_palette <- igv_palette[!(igv_palette %in% c("#F0E685FF", "#CDDEB7FF", "#5A655EFF", "#A9A9A9FF"))] # n = 47
+
+# assign to modules in tibble
+df_colors <- tibble(
+  module = 0:max((df_modules$module) %>% as.character() %>% as.numeric()) %>% as.factor()
+) %>%
+  mutate(
+    color = ifelse(module == 0, "#A9A9A9FF", igv_palette)
+  )
+
+# add to df_modules tibble
+df_modules <- df_modules %>%
+  dplyr::select(-color) %>%
+  left_join(df_colors, by = join_by(module)) %>%
+  arrange(sft, min_size, cut_height, module)
+
+# SAVE
+save(df_modules, file = paste0(objects_dir, prefix2, "_SIGNED_SFT", soft_power, "_MODS.RDS"))
+
+# write to csv
+df_modules %>%
+  unite(col = "Module set", c(sft, min_size, cut_height), sep = "_") %>%
+  dplyr::select(ensembl_transcript_id, everything()) %>%
+  group_by(`Module set`) %>%
+  arrange(module) %>%
+  write.csv(
+      paste0(base_dir, "outputs/tables/TableSXX", prefix2, "_SIGNED_SFT", soft_power, "_MODS.csv"),
+    row.names = FALSE
+  )
+```
