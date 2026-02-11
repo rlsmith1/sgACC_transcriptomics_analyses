@@ -1,17 +1,16 @@
 ---
-title: "00. Clean covariate data for downstream analyses"
+title: "00. Tidy covariate data for downstream analyses"
 author: "Rachel Smith"
 format: html
 editor: visual
 ---
-
-# Tidy covariate data for downstream analyses
 
 This script loads covariate data from multiple sources and combines it for downstream analyses.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 base_dir <- "~/Documents/PhD/projects/sgacc_wgcna_grcca/"
+objects_dir <- paste0(base_dir, "outputs/objects/")
 ```
 
 ## Libraries
@@ -59,7 +58,7 @@ biological_covariates <- c("age_death", "sex_at_birth", "race", "bmi", "height",
                            "marital_status", "manner_death", "education", 
                            "suicide", "brain_weight")
 drug_covariates <- c("smoker", "nicotine_cotinine", "alcohol", "opioids",
-                      "beta_blockers", "major_stimulants_cocaine_included", #"cannabinoids",
+                      "beta_blockers", "major_stimulants_cocaine_included", "cannabinoids",
                      "minor_stimulants", "anticholinergics", "antidepressants",
                      "anti_epileptics", "anti_histamines", "antipsychotics", 
                      "mood_stabilizers", "sedative_hypnotic_anxiolitics", "benzos",
@@ -158,7 +157,7 @@ df_covariates_numeric <- df_covariates %>%
 ## Save
 
 ```{r save}
-# save(df_covariates, df_covariates_numeric, 
-#      file = paste0(base_dir, "objects/22Jan2025_covariates.Rdata")
+# save(df_covariates, df_covariates_numeric,
+#      file = paste0(objects_dir, "22Jan2025_covariates.Rdata")
 # )
 ```

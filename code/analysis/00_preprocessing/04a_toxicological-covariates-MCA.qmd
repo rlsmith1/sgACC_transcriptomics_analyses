@@ -1,19 +1,17 @@
 ---
-title: "04a_toxicological-covariates-MCA"
+title: "04a. Run Multiple Correspondence Analysis on toxicology data across samples"
 author: "Rachel Smith"
 format: html
 editor: visual
 ---
-
-# Run Multiple Correspondence Analysis on toxicology data across samples
 
 Run MCA (dimensionality reduction for categorical data) to reduce dimensionality of toxicology data for GRCCA. This decreases the number of features we include in the Y (covariate) matrix, thus mitigating overfitting while still representing the covariate information.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 base_dir <- "~/Documents/PhD/projects/sgacc_wgcna_grcca/"
-figures_dir <- paste0(base_dir, "outputs/figures/supplement/")
-analysis_objects_dir <- paste0(base_dir, "outputs/objects/")
+supp_figures_dir <- paste0(base_dir, "outputs/figures/supplement/")
+objects_dir <- paste0(base_dir, "outputs/objects/")
 ```
 
 ## Libraries
@@ -32,14 +30,16 @@ load(paste0(base_dir, "objects/22Jan2025_covariates.Rdata")) # df_covariates, df
 
 ## Define toxicological covariates to include
 drug_covariates <- c(
-    "smoker", "nicotine_cotinine", "alcohol", "opioids", "cannabinoids", # "beta_blockers", # remove beta blockers from analysis because there are too many missing values
-    "major_stimulants_cocaine_included", "minor_stimulants", "anticholinergics", "antidepressants",
-    "anti_epileptics", "anti_histamines", "antipsychotics", "mood_stabilizers", "sedative_hypnotic_anxiolitics", "benzos",
+    "smoker", "nicotine_cotinine", "alcohol", "opioids", "cannabinoids", 
+    # "beta_blockers", # remove beta blockers from analysis because there are too many NAs
+    "major_stimulants_cocaine_included", "minor_stimulants", "anticholinergics",
+    "antidepressants", "anti_epileptics", "anti_histamines", "antipsychotics",
+    "mood_stabilizers", "sedative_hypnotic_anxiolitics", "benzos", 
     "other_psychotropic_drug", "non_psychiatric"
 )
 ```
 
-## MCA
+## Main MCA
 
 ```{r mca}
 ## Select variables for analysis
@@ -129,7 +129,359 @@ df_mca_covar_cor <- expand_grid(
 ## Save
 
 ```{r save}
-save(df_var_loadings, df_ind_loadings,
-     file = paste0(analysis_objects_dir, "drug_MCA_results.Rdata")
+# save(df_var_loadings, df_ind_loadings,
+#      file = paste0(objects_dir, "drug_MCA_results.Rdata")
+# )
+```
+
+## Plots
+
+```{r set_plot_aesthetics}
+## Theme
+theme_set(theme_cowplot() +
+              theme(plot.title = element_text(size = 11),
+                    axis.title = element_text(size = 10),
+                    axis.text = element_text(size = 9),
+                    strip.text = element_text(size = 10),
+                    legend.title = element_text(size = 9),
+                    legend.text = element_text(size = 8),
+                    plot.margin = margin(t = 0, r = 5, l = 0, b = 0)
+              )
+)
+
+## Define diagnosis colors (for plotting)
+## Dx colors
+dx_colors <- c(
+    "Control" = "#0072B2", 
+    "BD" = "#E69F00", 
+    "MDD" = "#009E73", 
+    "SCZ" = "#9966FF"
+)
+```
+
+### Figure S3A \| Matrix of drug use across 185 samples
+
+```{r FigS3a.prep}
+## Create numeric matrix of imputed toxicology data
+df_drugs_matrix <- df_covariates_numeric %>%
+    
+    # Select drug covariates only
+    dplyr::select(sample, all_of(drug_covariates)) %>% 
+    as_tibble() %>% 
+    
+    # Add diagnosis label to group by; will cluster within in each diagnosis group
+    mutate(dx = str_remove(sample, ".*_"), .before = 2)
+
+
+## Cluster samples and drugs using hclust to set order for plot
+df_drugs_cluster <- df_drugs_matrix %>% 
+    
+    # Run clustering algorithm within each diagnosis group
+    group_by(dx) %>% 
+    nest() %>%
+    
+    # Run hclust within each diagnosis group to cluster
+    mutate(
+        sample_hclust = map(
+            .x = data,
+            .f = ~ hclust(dist(.x %>% column_to_rownames("sample")))
+        ),
+        drugs_hclust = map(
+            .x = data,
+            .f = ~ hclust(dist(.x %>% column_to_rownames("sample") %>% t()))
+        )
+    )
+
+
+## Identify order for samples based on hclust algorithm
+samples_order <- df_drugs_cluster %>%
+    
+    # Pull sample order 
+    mutate(order = map(.x = sample_hclust, .f = ~ .x$order)) %>% 
+    unnest(cols = c(data, order)) %>% 
+    dplyr::select(dx, order, sample) %>%
+    
+    # Set diagnosis as numeric variable to order
+    mutate(dx = case_when(
+        str_detect(sample, "control") ~ 1,
+        str_detect(sample, "bipolar") ~ 2,
+        str_detect(sample, "mdd") ~ 3,
+        str_detect(sample, "schizo") ~ 4
+    )) %>%
+    
+    # Arrange by diagnosis and then within-diagnosis hclust order
+    arrange(dx, order) %>% 
+    pull(sample)
+
+
+## Identify order for drugs based on hclust algorithm
+drugs_order <- hclust(dist(df_drugs_matrix %>% dplyr::select(-dx) %>% column_to_rownames("sample") %>% t()))$order
+drugs_order <- tibble(
+    drug = drug_covariates,
+    order = drugs_order
+) %>% 
+    arrange(order) %>% 
+    pull(drug)
+
+
+## Format tibble with arrange rows & columns
+df_figS3a <- df_drugs_matrix %>% 
+    
+    # Pivot longer for tile plot
+    pivot_longer(3:ncol(.), names_to = "drug", values_to = "value") %>% 
+    
+    # Add labels to indicate what 1 and 0 mean
+    mutate(
+        
+        value = case_when(
+            value == 1 ~ "detected",
+            value == 0 ~ "not detected",
+            is.na(value) ~ "unknown"
+        ),
+        
+        # Set sample order based on clustering
+        sample = factor(sample, levels = samples_order),
+        
+        # Set drugs order based on clustering
+        drug = factor(drug, levels = drugs_order),
+        
+        # Relabel diagnostic groups and set factor levels
+        dx = case_when(
+            dx == "bipolar" ~ "BD",
+            dx == "control" ~ "Control",
+            dx == "mdd" ~ "MDD",
+            dx == "schizo" ~ "SCZ"
+        ) %>% 
+            factor(levels = names(dx_colors)),
+        
+    ) %>%
+
+    # Add fill colors to indicate diagnostic group
+    left_join(
+        enframe(dx_colors, name = "dx", value = "dx_fill") %>%
+            mutate(dx = factor(dx, levels = names(dx_colors)))
+    )
+
+
+## Set matrix colors for plot
+matrix_colors <- c(
+    "detected" = "white",
+    "not detected" = "black",
+    "unknown" = "gray"
+)
+
+
+## Count sample size within each diagnotic group (for plotting)
+dx_sample_size <- df_figS3a %>% 
+    dplyr::select(sample, dx) %>% 
+    distinct %>% 
+    count(dx) %>% 
+    deframe
+```
+
+```{r FigS3a.plot, fig.height = 2.25, fig.width = 6.5}
+df_figS3a %>%
+    
+    # Plot layers
+    ggplot(aes(x = sample)) +
+    geom_tile(aes(y = drug, fill = value)) + # drug tiles
+    geom_tile(aes(y = 0, fill = I(dx_fill))) + # sample tiles
+
+    facet_wrap(vars(dx), nrow = 1, scales = "free_x", strip.position = "bottom") +
+    force_panelsizes(cols = dx_sample_size) +
+    
+    # NEW: add diagnostic labels to samples (instead of legend)
+    geom_text(aes(label = dx, x = 25, y = 0), 
+              color = "white", size = 3.0, check_overlap = TRUE) +
+
+    # Aesthetics
+    scale_fill_manual(values = matrix_colors, na.value = "gray") +
+    guides(fill = guide_legend(title = NULL)) +
+    labs(y = NULL, title = "A | Imputed sample toxicology data") +
+    theme(axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          legend.position = c(-0.45, 0.90),
+          legend.key.size = unit(0.2, "cm"),
+          legend.text = element_text(size = 8),
+          legend.box.background = element_rect(color = "black"),
+          legend.box.margin = margin(t = 5, b = 5, l = 5, r = 5),
+          strip.background = element_blank(),
+          strip.text = element_blank(),
+          panel.spacing = unit(0.1, "cm"),
+          axis.line = element_blank(),
+          panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5)
+    )
+
+## Save
+map(
+    .x = c(".png", ".pdf"),
+    .f = ~ ggsave(paste0(supp_igures_dir, "S3A.sample_toxicology_matrix", .x), 
+                  width = 6.5, height = 2.25)
+)
+```
+
+### Figure S3B \| Variance explained of each toxicology MCA dimension
+
+```{r FigS3b.plot, fig.width = 2.0, fig.height=2.5}
+df_eig %>% 
+    mutate(dim = factor(dim, levels = rev(.$dim)),
+           label = ifelse(cum_var < 80, paste0(round(cum_var, 1), "%"), NA_character_)
+    ) %>% 
+    
+    # Plot
+    ggplot(aes(y = dim)) +
+    geom_col(aes(x = var, fill = var), color = "black") +
+    geom_text(aes(x = var, label = label),
+              size = 2.5, hjust = -0.1) +
+    geom_vline(xintercept = 5, color = "maroon") +
+    
+    # Plot aesthetics
+    scale_fill_gradient(low = "white", high = "black", guide = "none") +
+    labs(x = "% variance explained", y = "Dimension",
+         title = "B | Eigenvalues"
+    )
+
+## Save
+map(
+    .x = c(".png", ".pdf"),
+    .f = ~ ggsave(paste0(supp_figures_dir, "S3B.MCA_variance_explained", .x), 
+                  width = 2.0, height = 2.5)
+)
+```
+
+### Figure S3C \| MCA variable loadings
+
+```{r FigS3C.prep}
+## Prep data
+df_figS3c <- df_var_loadings %>% 
+    pivot_longer(3:ncol(.), names_to = "dimension", values_to = "score") %>% 
+    filter(use == "yes") %>% 
+    mutate(
+        drug = factor(drug, levels = rev(drugs_order)),
+        dimension = str_replace(dimension, "dim", "") %>% factor(levels = 18:1),
+        significant = ifelse(abs(score) > 0.015, "yes", "no")
+    ) %>% 
+    arrange(abs(score))
+
+## Set color scale min and max
+scale_max <- df_figS3c %>% pull(score) %>% abs %>% max
+```
+
+```{r FigS3C.plot, fig.width = 4.5, fig.height = 3.35}
+df_figS3c %>% 
+    
+    # layout
+    ggplot(aes(x = drug, y = dimension)) +
+    geom_point(aes(fill = score, color = significant, size = abs(score)), shape = 21) +
+
+    # aesthetics
+    scale_fill_gradientn(colors = gene_weight_color_scale, 
+                         limits = c(-scale_max, scale_max), name = "Loading") +
+    scale_color_manual(values = c("yes" = "black", "no" = "transparent"), guide = "none") +
+    scale_size_continuous(limits = c(0, scale_max), range = c(0.1, 5), guide = "none") +
+    guides(fill = guide_colorbar(title = "Loading", title.position = "top", title.hjust = 0.5)) +
+    
+    coord_cartesian(clip = "off") +
+    labs(y = NULL, x = NULL, 
+         title = "C | Variable loadings") +
+    theme(
+        legend.margin = margin(l = -15),  
+        legend.key.width = unit(0.15, "cm"),
+        legend.key.height = unit(0.60, "cm"),
+        legend.title = element_text(hjust = 0.5, size = 7),
+        legend.text = element_text(size = 6),
+        axis.text.y = element_text(size = 8.5),
+        axis.text.x = element_text(angle = 45, hjust = 1, size = 7)
+    )
+
+## Save
+map(
+    .x = c(".png", ".pdf"),
+    .f = ~ ggsave(paste0(supp_figures_dir, "S3C.MCA_variable_loadings", .x), 
+                  width = 4.5, height = 3.35)
+)
+```
+
+### Figure S3D \| MCA dimension - covariate correlations
+
+```{r FigS3d.prep}
+## Arrange covariates and format for plotting
+df_figS3d <- df_mca_covar_cor %>% 
+    
+    # Remove technical covariates & dx, as well as drugs that did not pass NA filtering
+    # Only interested in drugs and biological/demographic covariates
+    filter(covariate %in% c(names(dx_colors), 
+                            biological_covariates, 
+                            drug_covariates, 
+                            technical_covariates)) %>% 
+    
+    # Format for plotting
+    mutate(
+        
+        dimension = str_remove(dimension, "dim") %>% as.numeric %>% factor(levels = 18:1),
+        significant = ifelse(p_adj < 0.05, "yes", "no"),
+        type = case_when(
+            covariate %in% technical_covariates ~ "Technical",
+            covariate %in% biological_covariates ~ "Demographic",
+            covariate %in% drug_covariates ~ "Toxicological",
+            TRUE ~ "Diagnosis"
+        ) %>% 
+            factor(levels = c("Diagnosis", "Demographic", "Technical", "Toxicological")),
+        covariate = factor(covariate, 
+                           levels = c(names(dx_colors), 
+                                      biological_covariates, 
+                                      technical_covariates, 
+                                      rev(drugs_order)))
+        
+    ) %>% 
+    arrange(abs(pearsons_r)) %>% 
+    
+    # Remove demographic covariates that aren't numeric (ordinal)
+    filter(!(covariate %in% c(marital_status, education)))
+```
+
+```{r FigS3d.plot, fig.width = 6.5, fig.height = 3.4}
+df_figS3d %>% 
+    #filter(covariate != "Tecnical") %>% # Remove technical for now?
+    
+    # Layout
+    ggplot(aes(x = covariate, y = dimension)) +
+    geom_point(aes(fill = pearsons_r, size = abs(pearsons_r), color = significant), 
+               shape = 21) +
+    
+    facet_wrap(vars(type), scales = "free_x", nrow = 1) +
+    force_panelsizes(cols = c(
+        length(dx_colors), 
+        length(biological_covariates),
+        length(technical_covariates) - 2,
+        length(drug_covariates)
+    )
+    ) +
+    
+    # Aesthetics
+    scale_fill_gradientn(colors = rev(brewer.rdbu(100)), limits = c(-1.0, 1.0), name = "r") +
+    scale_color_manual(values = c("yes" = "black", "no" = "transparent"), guide = "none") +
+    scale_size_continuous(limits = c(0, 1.0), range = c(0.1, 4), guide = "none") +
+    
+    coord_cartesian(clip = "off") +
+    labs(x = NULL, y = "Dimension", 
+         title = "MCA dimension correlations with known covariates") +
+    theme(
+        legend.margin = margin(l = -10),  
+        legend.key.width = unit(0.15, "cm"),
+        legend.key.height = unit(0.60, "cm"),
+        legend.title = element_text(hjust = 0.5, size = 7),
+        legend.text = element_text(size = 6, margin = margin(l = 1)),
+        strip.text = element_text(size = 8),
+        axis.text.y = element_text(size = 8.5),
+        axis.text.x = element_text(angle = 45, hjust = 1, size = 7),
+        panel.spacing = unit(0.15, "cm")
+    )
+
+## Save
+map(
+    .x = c(".png", ".pdf"),
+    .f = ~ ggsave(paste0(supp_figures_dir, "S3D.MCA_dimension_covariate_correlations", .x), 
+                  width = 6.5, height = 3.4)
 )
 ```

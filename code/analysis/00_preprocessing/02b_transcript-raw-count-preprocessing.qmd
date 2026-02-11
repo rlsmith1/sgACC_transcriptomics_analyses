@@ -1,19 +1,19 @@
 ---
-title: "02b_transcript-raw-count-preprocessing"
+title: "02b. Transcripts raw count preprocessing"
 author: "Rachel Smith"
 format: html
 editor: visual
 ---
 
-# TRANSCRIPTS: Read in raw count data, normalize using DESeq2, qSVA correction & regress covariates
+# Read in raw count data, normalize using DESeq2, qSVA correction & regress covariates
 
 This script is similar to 02a, but because the final model includes the same covariates as the gene-level analysis (for the sake of consistency), we just compare normalized count data to normalized + corrected count data.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 base_dir <- "~/Documents/PhD/projects/sgacc_wgcna_grcca/"
-figures_dir <- paste0(base_dir, "outputs/figures/supplement/")
-analysis_objects_dir <- paste0(base_dir, "outputs/objects/")
+supp_figures_dir <- paste0(base_dir, "outputs/figures/supplement/")
+objects_dir <- paste0(base_dir, "outputs/objects/")
 ```
 
 ## Libraries
@@ -60,7 +60,8 @@ At least 10 raw counts in at least 80% of samples
 ```{r filter_counts}
 keep <- df_transcript_raw_counts %>% 
   mutate_if(is.numeric, ~ifelse(.x >= 10, 1, 0)) %>% 
-  mutate(thresh = rowSums(dplyr::select(., -ensembl_transcript_id))/(ncol(.) - 1), .before = 2) %>% 
+  mutate(thresh = rowSums(dplyr::select(., -ensembl_transcript_id))/(ncol(.) - 1), 
+         .before = 2) %>% 
   filter(thresh >= 0.80) %>% 
   pull(ensembl_transcript_id)
 length(keep) # 72403
@@ -142,7 +143,7 @@ p_pca + p_var + plot_annotation(title = "PCA 1: VST normalized counts before qSV
 ## Save
 # map(
 #   .x = c(".png", ".pdf"),
-#   .f = ~ ggsave(paste0(base_dir, "outputs/figures/for_manuscript/qSVA/PCA1_TRANSCRIPTS_normalized_counts", .x),
+#   .f = ~ ggsave(paste0(base_dir, "supp_figures_dir/PCA1_TRANSCRIPTS_normalized_counts", .x),
 #                 width = 10, height = 5)
 # )
 
@@ -150,7 +151,9 @@ p_pca + p_var + plot_annotation(title = "PCA 1: VST normalized counts before qSV
 ## Correlate PCs with covariates
 df_pc_covar_cor <- df_pca %>% 
   pivot_longer(contains("pc"), names_to = "pc", values_to = "pc_val") %>% 
-  pivot_longer(!contains(c("pc", "sample")), names_to = "covariate", values_to = "covariate_val") %>% 
+  pivot_longer(!contains(c("pc", "sample")), 
+               names_to = "covariate", 
+               values_to = "covariate_val") %>% 
   group_by(pc, covariate) %>% 
   nest() %>% 
   mutate(pearsons_r = map(.x = data, .f = ~ cor.test(.x$pc_val, .x$covariate_val)$estimate),
@@ -170,7 +173,8 @@ df_pc_covar_cor %>%
   mutate(significant = ifelse(p_adj < 0.05, "yes", "no")) %>% 
   
   ggplot(aes(x = pc, y = covariate)) +
-  geom_tile(aes(fill = pearsons_r, color = significant), width = 0.98, height = 0.98, linewidth = 0.5) +
+  geom_tile(aes(fill = pearsons_r, color = significant), 
+            width = 0.98, height = 0.98, linewidth = 0.5) +
   scale_fill_gradient2(low = "blue", mid = "white", high = "red") +
   scale_color_manual(values = c("yes" = "black", "no" = "transparent"), guide = "none") +
   guides(fill = guide_colorbar(title = "Pearson's r")) +
@@ -183,7 +187,7 @@ df_pc_covar_cor %>%
 ## Save
 # map(
 #   .x = c(".png", ".pdf"),
-#   .f = ~ ggsave(paste0(base_dir, "outputs/figures/PCA1_TRANSCRIPTS_covariate_correlations", .x),
+#   .f = ~ ggsave(paste0(base_dir, "supp_figures_dir/PCA1_TRANSCRIPTS_covariate_correlations", .x),
 #                 width = 5, height = 8)
 # )
 ```
@@ -194,7 +198,8 @@ Regress the same qSVs that we regressed at the gene level
 
 ```{r regress_step2}
 df_qsvs %>% dplyr::select(-sample) %>% colnames
-keep_qsvs <- paste0("qSV", c(seq(1, 7), 9)) # correlate with known covariates or var explained > 2%
+# correlate with known covariates or var explained > 2% (same as genes)
+keep_qsvs <- paste0("qSV", c(seq(1, 7), 9)) 
 mod <- df_covar_qsv %>% 
   dplyr::select(all_of(keep_qsvs), sex_at_birth, race, age_death, gc_percent) %>% 
   as.data.frame %>% 
@@ -275,13 +280,14 @@ p_var <- df_var %>%
                         limits = c(0, 0.015), guide = "none") +
     labs(x = "PC", y = "Proportion of variance explained")
 
-p_pca / p_var + plot_annotation(title = "PCA 3: VST normalized counts with qSV + race + sex at birth + age at death + GC percent regression")
+p_pca / p_var + 
+    plot_annotation(title = "PCA 3: VST normalized counts with qSV + race + sex at birth + age at death + GC percent regression")
 
 
 ## Save
 # map(
 #     .x = c(".png", ".pdf"),
-#     .f = ~ ggsave(paste0(base_dir, "outputs/figures/PCA3_TRANSCRIPTS_normalized_and_regressed_counts", .x),
+#     .f = ~ ggsave(paste0(base_dir, "supp_figures_dir/PCA3_TRANSCRIPTS_normalized_and_regressed_counts", .x),
 #                   width = 7, height = 8)
 # )
   
@@ -313,7 +319,8 @@ df_pc_covar_cor %>%
     scale_fill_gradient2(low = "blue", mid = "white", high = "red") +
     scale_color_manual(values = c("yes" = "black", "no" = "transparent"), guide = "none") +
     guides(fill = guide_colorbar(title = "Pearson's r")) +
-    labs(x = "PC (> 1% explained var)", title = "PC-covariate correlations following qSV + race + sex at birth + age at death + GC percent regression",
+    labs(x = "PC (> 1% explained var)", 
+         title = "PC-covariate correlations following qSV + race + sex at birth + age at death + GC percent regression",
          caption = "Box outline indicates FDR < 0.05") +
     theme_classic() +
     theme(legend.key.height = unit(2, "cm"))
@@ -322,7 +329,7 @@ df_pc_covar_cor %>%
 ## Save
 # map(
 #     .x = c(".png", ".pdf"),
-#     .f = ~ ggsave(paste0(base_dir, "outputs/figures/for_manuscript/qSVA/PCA3_TRANSCRIPTS_covariate_correlations", .x),
+#     .f = ~ ggsave(paste0(base_dir, "supp_figures_dir/PCA3_TRANSCRIPTS_covariate_correlations", .x),
 #                   width = 8, height = 8)
 # )
 ```

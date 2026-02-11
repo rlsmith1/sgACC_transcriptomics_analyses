@@ -1,3 +1,6 @@
 data/
 archive/
 code/analysis/archive/
+code/analysis/**
+!code/analysis/**/
+!code/analysis/**/*.qmd

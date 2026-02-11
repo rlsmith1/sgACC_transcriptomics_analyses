@@ -1,11 +1,9 @@
 ---
-title: "01_qSVA"
+title: "01. Identify qSVs using transcript counts and qsvaR"
 author: "Rachel Smith"
 format: html
 editor: visual
 ---
-
-# Identify qSVs using transcript counts and qsvaR
 
 Run qSVA using qsvaR to account for transcript degradation in post-mortem gene expression data.
 
@@ -14,7 +12,10 @@ Then combine with known covariates for covariate selection.
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 base_dir <- "~/Documents/PhD/projects/sgacc_wgcna_grcca/"
-analysis_objects_dir <- paste0(base_dir, "outputs/objects/")
+objects_dir <- paste0(base_dir, "outputs/objects/")
+supp_figures_dir <- paste0(project_dir, "outputs/figures/supplement/")
+
+## Set plot aesthetics
 ```
 
 ## Libraries
@@ -25,8 +26,10 @@ library(janitor)
 library(qsvaR)
 library(biomaRt)
 library(RColorBrewer)
+library(pals)
 library(patchwork)
 library(DESeq2)
+library(cowplot)
 ```
 
 ## Load data
@@ -41,7 +44,7 @@ df_transcript_raw_counts <- read.csv(paste0(base_dir, "data/transcript_count_mat
     rename_all(~str_remove(.x, "x")) 
 
 # Formatted covariate data
-load(paste0(base_dir, "objects/22Jan2025_covariates.Rdata")) # df_covariates, df_covariates_clean (generated in 00_clean-covariates.R)
+load(paste0(objects_dir, "22Jan2025_covariates.Rdata")) # df_covariates, df_covariates_clean (generated in 00_clean-covariates.R)
 
 # Convert to matrix
 m_metadata <- df_covariates_numeric %>% 
@@ -61,7 +64,8 @@ At least 10 raw counts in at least 80% of samples
 ```{r filter_counts}
 keep <- df_transcript_raw_counts %>% 
     mutate_if(is.numeric, ~ifelse(.x >= 10, 1, 0)) %>% 
-    mutate(thresh = rowSums(dplyr::select(., -ensembl_transcript_id))/(ncol(.) - 1), .before = 2) %>% 
+    mutate(thresh = rowSums(dplyr::select(., -ensembl_transcript_id))/(ncol(.) - 1), 
+           .before = 2) %>% 
     filter(thresh >= 0.80) %>% 
     pull(ensembl_transcript_id)
 length(keep) # 72403
@@ -101,8 +105,8 @@ df_bm <- getBM(attributes = c("ensembl_transcript_id",
     as_tibble()
   
 ## Get degradation transcripts from qsvaR
-degradation_transcripts <- select_transcripts('cell_component')
-df_bm %>% filter(ensembl_transcript_id_version %in% degradation_transcripts) # 2,292
+degradation_transcripts <- qsvaR::select_transcripts(cell_component = TRUE)
+#df_bm %>% filter(ensembl_transcript_id_version %in% degradation_transcripts) # n = 1325
 
 ## Map transcript ID version to transcript in normalized count matrix
 m_vsd_filt <- m_vsd %>% 
@@ -113,9 +117,12 @@ m_vsd_filt <- m_vsd %>%
     as_tibble %>% 
     
     # join with biomart info
-    left_join(df_bm[1:2]) %>% 
+    left_join(df_bm[1:2], by = join_by(ensembl_transcript_id)) %>% 
     dplyr::select(ensembl_transcript_id_version, everything(), -ensembl_transcript_id) %>% 
     na.omit %>% 
+    
+    # include only samples that are in the metadata (exclude outliers)
+    dplyr::select(ensembl_transcript_id_version, all_of(rownames(m_metadata))) %>% 
     
     # convert back to matrix
     as.data.frame %>% 
@@ -155,7 +162,7 @@ rse_tx <- SummarizedExperiment(assays = SimpleList(counts = m_vsd_filt),
 ```{r run_qsva}
 ## Identify degradation matrix for our transcripts
 DegTx <- getDegTx(rse_tx,
-                  type = "cell_component",
+                  sig_transcripts = degradation_transcripts,
                   assayname = "counts")
 
 ## Extract PCs from this matrix
@@ -177,7 +184,8 @@ mod <- model.matrix(~ dx,
 
 ## Wrapper function to extract qSVs
 set.seed(20240306)
-qsvs <- qSVA(rse_tx = rse_tx, type = "cell_component", mod = mod, assayname = "counts")
+qsvs <- qSVA(rse_tx = rse_tx, sig_transcripts = degradation_transcripts, 
+             mod = mod, assayname = "counts")
 
 ## Convert to tibble
 df_qsvs <- qsvs %>% 
@@ -221,6 +229,164 @@ df_covariate_qsv_cor <- expand_grid(
 
 ```{r save}
 save(df_qsvs, df_qsv_var_expl, df_covariate_qsv_cor,
-     file = paste0(analysis_objects_dir, "06March2024_qSVs.Rdata")
+     file = paste0(objects_dir, "06March2024_qSVs.Rdata")
 ) # df_qsvs, df_qsv_var_expl
+```
+
+## Plots
+
+```{r set_plot_aesthetics}
+theme_set(theme_cowplot() +
+              theme(plot.title = element_text(size = 11),
+                    axis.title = element_text(size = 10),
+                    axis.text = element_text(size = 9),
+                    strip.text = element_text(size = 10),
+                    legend.title = element_text(size = 9),
+                    legend.text = element_text(size = 8),
+                    plot.margin = margin(t = 0, r = 5, l = 0, b = 0)
+              )
+)
+```
+
+### Figure S2A \| Variance explained by qSVs
+
+```{r FigS2a.plot, fig.height = 2, fig.width = 2.5}
+df_qsv_var_expl %>% #dplyr::count(feature)
+    dplyr::filter(feature == "Proportion of Variance" & qSV %in% 1:16) %>%
+    
+    ggplot(aes(x = qSV, y = value*100)) +
+    geom_col(aes(fill = value), color = "black") +
+    geom_hline(yintercept = 0.02*100, color = "maroon") +
+    scale_fill_gradient(low = "white", high = "black", 
+                        limits = c(0, 0.06), guide = "none") +
+    #scale_y_continuous(breaks = seq(0, 0.06, 0.01)) +
+    coord_cartesian(clip = "off") +
+    labs(y = "% variance explained",
+         title = "A | qSV variance explained") +
+    theme(axis.text.x = element_text(angle = 45))
+
+# Save
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supp_figures_dir, "S2A.qSV_variance_explained", .x), 
+                width = 2.5, height = 2)
+)
+```
+
+### Figure S2B \| Correlate qSVs with known covariates
+
+```{r FigS2b.prep}
+## Define covariate types
+technical_covariates <- c(
+    "mapped_percent", "gc_percent", "five_prime_three_prime_bias", 
+    "rin_acsg", "rna_extraction_batch",
+    "library_batch", "pmi", "pmi_confidence", "source", "ph", #"max_rin", "max_rine"
+)
+biological_covariates <- c(
+    "age_death", "sex_at_birth", "race", "bmi", "height", "weight",
+    "marital_status", "manner_death", "education", "suicide", "brain_weight"
+)
+drug_covariates <- c(
+    "smoker", "nicotine_cotinine", "alcohol", "opioids", 
+    "cannabinoids", # "beta_blockers", # remove beta blockers due to too many missing values
+    "major_stimulants_cocaine_included", "minor_stimulants", 
+    "anticholinergics", "antidepressants",
+    "anti_epileptics", "anti_histamines", "antipsychotics", 
+    "mood_stabilizers", "sedative_hypnotic_anxiolitics", "benzos",
+    "other_psychotropic_drug", "non_psychiatric"
+)
+
+## Define covariate order based on clustering within each type
+f_define_order <- function(covariate_matrix, 
+                           covariate_type = c("technical", "biological", "toxicological")) {
+    if (covariate_type == "technical") {
+        subset <- technical_covariates
+    } else if (covariate_type == "biological") {
+        subset <- biological_covariates
+    } else if (covariate_type == "toxicological") {
+        subset <- drug_covariates
+    } else (stop("Covariate type must be technical, biological, or toxicological"))
+    matrix_tmp <- covariate_matrix[,subset]
+   order <- matrix_tmp[hclust(dist(matrix_tmp))$order,] %>% colnames
+   return(order)
+}
+m_covariates <- df_covariates_numeric %>% 
+    dplyr::select(all_of(c(technical_covariates, biological_covariates, drug_covariates))) %>%  
+    as.matrix()
+covariate_order <- c(
+    f_define_order(m_covariates, "biological"),
+    f_define_order(m_covariates, "toxicological"),
+    f_define_order(m_covariates, "technical")
+)
+
+
+## Switch major_stimulants_cocaine_included and cannabinoids for the plot
+swtch <- function(vec, value1, value2) {
+  # Ensure the values exist in the vector
+  if (!(value1 %in% vec) || !(value2 %in% vec)) {
+    stop("Both values must exist in the vector.")
+  }
+  
+  # Find the positions of the values
+  pos1 <- which(vec == value1)
+  pos2 <- which(vec == value2)
+  
+  # Swap the elements
+  vec[pos1] <- value2
+  vec[pos2] <- value1
+  
+  return(vec)
+}
+covariate_order <- swtch(covariate_order, "major_stimulants_cocaine_included", "cannabinoids")
+
+## Create dataframe defining covariate type & order
+df_figS2b <- df_covariate_qsv_cor %>% 
+    mutate(significance = case_when(
+        p_adj < 0.05 & p_adj > 0.01 ~ "*",
+        p_adj < 0.01 ~ "**",
+        TRUE ~ ""
+    ),
+           #covariate = factor(covariate, levels = covariate_order),
+           type = case_when(
+               covariate %in% technical_covariates ~ "Technical",
+               covariate %in% biological_covariates ~ "Biological",
+               covariate %in% drug_covariates ~ "Toxicological",
+               TRUE ~ "Diagnostic group"
+           ) %>% 
+               factor(levels = c("Diagnostic group", "Technical", "Toxicological", "Biological"))
+    ) %>% 
+    filter(type != "Diagnostic group") %>% 
+    arrange(type, qsv, pearsons_r) %>% 
+    mutate(covariate = factor(covariate, levels = covariate_order))
+```
+
+```{r FigS2b.plot, fig.height = 6.5, fig.width = 4}
+df_figS2b %>% 
+    ggplot(aes(x = qsv, y = covariate)) +
+    geom_tile(aes(fill = pearsons_r), width = 0.98, height = 0.98) +
+    geom_text(aes(label = significance), vjust = 0.75) +
+    facet_wrap(vars(type), scales = "free", space = "free_y", ncol = 1) +
+    #force_panelsizes(rows = c(length(biological_covariates), length(drug_covariates), length(technical_covariates))) +
+    
+    scale_fill_gradientn(colors = rev(brewer.rdbu(100))) +
+    coord_cartesian(clip = "off") +
+    guides(fill = guide_colorbar(title = "Pearson's r", 
+                                 title.hjust = 0.5, title.position = "left")) +
+    labs(x = "qSV", y = NULL, 
+         title = "B | qSVs and known \ncovariate correlations"
+    ) +
+    theme(legend.position = c(-1.1, 1.0),
+          legend.key.height = unit(0.6, "cm"),
+          legend.key.width = unit(0.15, "cm"),
+          legend.title = element_text(angle = 90),
+          axis.text.x = element_text(angle = 45),
+          strip.background = element_rect(fill = "white", color = "black")
+    )
+
+# Save
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supp_figures_dir, "S2B.qSV_covariate_correlations", .x), 
+                width = 4, height = 6.5)
+)
 ```

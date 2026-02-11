@@ -60,7 +60,8 @@ functions_dir <- paste0(project_dir, "code/functions/")
 scripts_dir <- paste0(project_dir, "code/analysis/")
 
 objects_dir <- paste0(project_dir, "outputs/objects/")
-figures_dir <- paste0(project_dir, "outputs/figures/")
+figures_dir <- paste0(project_dir, "outputs/figures/main/")
+supp_figures_dir <- paste0(project_dir, "outputs/figures/supplement/")
 tables_dir <- paste0(project_dir, "outputs/tables/")
 
 

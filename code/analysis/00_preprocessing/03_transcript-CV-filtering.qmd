@@ -1,19 +1,17 @@
 ---
-title: "03_transcript-CV-filtering"
+title: "03. Filter transcripts based on coefficient of variation"
 author: "Rachel Smith"
 format: html
 editor: visual
 ---
-
-# Filter transcripts based on coefficient of variation
 
 Due to a high number of features, the transcript-level data requires some extra filtering to remove uninformative features (for computational efficiency). Because variance scales with mean, we use coefficient of variation (CV) i.e., how variable is the transcript across samples given its expression levels? To avoid simply filtering out rare (less expressed) transcripts.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 base_dir <- "~/Documents/PhD/projects/sgacc_wgcna_grcca/"
-supplement_figures_dir <- paste0(base_dir, "outputs/figures/supplement/")
-analysis_objects_dir <- paste0(base_dir, "outputs/objects/")
+supp_figures_dir <- paste0(base_dir, "outputs/figures/supplement/")
+objects_dir <- paste0(base_dir, "outputs/objects/")
 ```
 
 ## Libraries
@@ -41,7 +39,7 @@ df_transcript_raw_counts <- read.csv(paste0(base_dir, "data/transcript_count_mat
 
 ## Calculate transcript coefficient of variation
 
-\[Selecting information features and reducing dimensionality\]\[https://www.nature.com/articles/s41576-023-00586-w https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-10-193\] (pick arbitrary threshold)
+[Selecting information features and reducing dimensionality](https://www.nature.com/articles/s41576-023-00586-w https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-10-193) (will need to pick arbitrary threshold)
 
 We don't just want to filter on variance because variance scales with mean and some transcripts have very low expression. So we can use CV, which filters on variance relative to mean.
 
@@ -87,14 +85,91 @@ ncol(df_vsd_regress_filt) - 1 # n = 54302 remaining transcripts
 ## Save CV objects for supplemental figures
 save(
     df_mean_sd, cutoff,
-    file = paste0(analysis_objects_dir, "transcript_coefficient_of_variation.RData")
+    file = paste0(objects_dir, "transcript_coefficient_of_variation.RData")
 )
 
 ## Save df_vsd_regress_filt for downstream analyses
 prefix2 <- paste0(prefix, "_CVq1")
-save(df_vsd_regress_filt, file = paste0(base_dir, "objects/", prefix2, ".RDS")) # df_vsd_regress_filt
+save(df_vsd_regress_filt, file = paste0(objects_dir, prefix2, ".RDS")) # df_vsd_regress_filt
 
 ## Save filtered and regressed counts as a matrix to run WTCNA on the cluster
 count_matrix <- df_vsd_regress_filt %>% column_to_rownames("sample")
-save(count_matrix, file = paste0(base_dir, "objects/", prefix2, "_matrix.RDS"))
+save(count_matrix, file = paste0(objects_dir, prefix2, "_matrix.RDS"))
+```
+
+## Plots
+
+```{r set_plot_aesthetics}
+theme_set(theme_cowplot() +
+              theme(plot.title = element_text(size = 11),
+                    axis.title = element_text(size = 10),
+                    axis.text = element_text(size = 9),
+                    strip.text = element_text(size = 10),
+                    legend.title = element_text(size = 9),
+                    legend.text = element_text(size = 8),
+                    plot.margin = margin(t = 0, r = 5, l = 0, b = 0)
+              )
+)
+```
+
+### FIgure S1A \| Relationship between mean and standard deviation
+
+```{r FigS1a.plot, fig.width = 2.6}
+df_mean_sd %>% 
+  ggplot(aes(x = mean %>% log10, y = stdev %>% log10)) +
+  geom_point(shape = 21, size = 0.75) +
+  #geom_density2d(linewidth = 0.25) +
+  geom_smooth(method = "lm", color = "maroon", linewidth = 0.5) +
+  stat_cor(label.sep = "\n", vjust = 1, size = 3.5) +
+  labs(x = "log10(mean)", y = "log10(standard deviation)",
+       title = "A | Mean vs standard deviation \nin transcript raw counts")
+
+## Save
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supp_figures_dir, "S1A.transcript_raw_counts_mean_stdev", .x),
+                width = 2.6, height = 2)
+)
+```
+
+### FIgure S1B \| Relationship between mean and coefficient of variation
+
+```{r FigS1b.plot, fig.width = 2.6}
+df_mean_sd %>% 
+    ggplot(aes(x = log10(mean), y = CV %>% log10)) +
+    geom_point(shape = 21, size = 0.75) +
+    geom_density2d() +
+    geom_smooth(method = "lm", color = "maroon", linewidth = 0.5) +
+    stat_cor(label.sep = "\n", label.x.npc = "right",
+             vjust = 1, hjust = 1, size = 3.5
+    ) +
+    labs(x = "log10(mean)", y = "log10(coefficient of variation)",
+         title = "B | Mean vs coefficient of \nvariation in transcript counts")
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supp_figures_dir, "S1B.transcript_raw_counts_mean_CV", .x), 
+                width = 2.6, height = 2)
+)
+```
+
+### FIgure S1C \| Cutoff for coefficient of variation
+
+```{r FigS1c.plot}
+df_mean_sd %>% 
+  ggplot(aes(x = CV)) +
+  geom_hline(yintercept = 0) +
+  geom_point(aes(y = 3.5), position = position_jitter(0.001), alpha = 0.5, size = 0.75, shape = 21) +
+  geom_density(color = "blue", fill = "transparent") +
+  geom_boxplot(aes(y = -0.1), color = "blue", width = 0.2, outlier.shape = NA) +
+  geom_vline(xintercept = cutoff, lty = 2, color = "maroon") +
+  labs(x = "Coefficient of variation (CV)", y = NULL,
+       title = "C | Coefficient of variation \nacross transcripts") +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank()
+  ) 
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supp_figures_dir, "S1C.CV_distribution", .x), 
+                width = 2.5, height = 2)
+)
 ```

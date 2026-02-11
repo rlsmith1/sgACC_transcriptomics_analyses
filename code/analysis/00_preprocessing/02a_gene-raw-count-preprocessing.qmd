@@ -1,11 +1,11 @@
 ---
-title: "02a_gene-raw-count-preprocessing"
+title: "02a. Genes raw count preprocessing"
 author: "Rachel Smith"
 format: html
 editor: visual
 ---
 
-# GENES: Read in raw count data, normalize using DESeq2, qSVA correction & regress covariates
+# Read in raw count data, normalize using DESeq2, qSVA correction & regress covariates
 
 Identify covariates to regress from gene expression data and include as covariates in DGE model.
 
@@ -14,8 +14,8 @@ This is a stepwise script: regress --\> run PCA --\> check expression PC-covaria
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 base_dir <- "~/Documents/PhD/projects/sgacc_wgcna_grcca/"
-figures_dir <- paste0(base_dir, "outputs/figures/supplement/")
-analysis_objects_dir <- paste0(base_dir, "outputs/objects/")
+supp_figures_dir <- paste0(base_dir, "outputs/figures/supplement/")
+objects_dir <- paste0(base_dir, "outputs/objects/")
 ```
 
 ## Libraries
@@ -34,7 +34,8 @@ load(paste0(base_dir, "objects/22Jan2025_covariates.Rdata")) # df_covariates, df
 # Gene raw counts
 df_raw_counts <- read.table(
     paste0(base_dir, 
-           "data/185samples_allGenes_auto-PARs_noSexChrs_noFilters_KoryAnalysis_21Kgenes.txt")) %>% 
+           "data/185samples_allGenes_auto-PARs_noSexChrs_noFilters_KoryAnalysis_21Kgenes.txt")
+    ) %>% 
     as_tibble(rownames = "ensembl_gene_id") %>% 
     rename_at(2:ncol(.), ~substr(.x, start = 2, stop = nchar(.x))) %>% 
     clean_names() %>% 
@@ -168,7 +169,7 @@ p_pca + p_var + plot_annotation(title = "PCA 1: VST normalized counts before qSV
 # SAVE
 # map(
 #   .x = c(".png", ".pdf"),
-#   .f = ~ ggsave(paste0(figures_dir, "PCA1_GENES_normalized_counts", .x),
+#   .f = ~ ggsave(paste0(supp_figures_dir, "PCA1_GENES_normalized_counts", .x),
 #                 width = 10, height = 5)
 # )
 ```
@@ -266,7 +267,7 @@ p_pca / p_var +
 ## Save
 # map(
 #   .x = c(".png", ".pdf"),
-#   .f = ~ ggsave(paste0(base_dir, "outputs/figures/for_manuscript/qSVA/PCA2_GENES_normalized_and_regressed_counts", .x),
+#   .f = ~ ggsave(paste0(supp_figures_dir, "PCA2_GENES_normalized_and_regressed_counts", .x),
 #                 width = 6, height = 8)
 # )
 
@@ -299,7 +300,8 @@ df_pc_covar_cor %>%
   scale_fill_gradient2(low = "blue", mid = "white", high = "red") +
   scale_color_manual(values = c("yes" = "black", "no" = "transparent"), guide = "none") +
   guides(fill = guide_colorbar(title = "Pearson's r")) +
-  labs(x = "PC (> 2% explained var)", title = "PC-covariate correlations following qSV regression",
+  labs(x = "PC (> 2% explained var)", 
+       title = "PC-covariate correlations following qSV regression",
        caption = "Box outline indicates FDR < 0.05") +
   theme_classic() +
   theme(legend.key.height = unit(2, "cm"))
@@ -308,7 +310,7 @@ df_pc_covar_cor %>%
 ## Save
 # map(
 #   .x = c(".png", ".pdf"),
-#   .f = ~ ggsave(paste0(base_dir, "outputs/figures/for_manuscript/qSVA/PCA2_GENES_covariate_correlations", .x),
+#   .f = ~ ggsave(paste0(base_dir, "supp_figures_dir/PCA2_GENES_covariate_correlations", .x),
 #                 width = 8, height = 8)
 # )
 ```
@@ -319,7 +321,8 @@ Regress same covariates as before, but this time also regress age at death and G
 
 ```{r regress_step3}
 df_qsvs %>% dplyr::select(-sample) %>% colnames
-keep_qsvs <- paste0("qSV", c(seq(1, 7), 9)) # correlate with known covariates or var explained > 2%
+# correlate with known covariates or var explained > 2%
+keep_qsvs <- paste0("qSV", c(seq(1, 7), 9)) 
 mod <- df_covar_qsv %>% 
   dplyr::select(all_of(keep_qsvs), sex_at_birth, race, age_death, gc_percent) %>% 
   as.data.frame %>% 
@@ -340,8 +343,6 @@ for (i in 1:nrow(m_vsd)) {
   df_vsd_regress[[gene]] <- m_vsd_clean
   
 }  
-
-df_vsd_regress
 ```
 
 ## PCA3: vsd \~ qSV1-7 + 9 + sex_at_birth + race + age_death + gc_percent
@@ -425,13 +426,14 @@ p_var <- df_var %>%
                       limits = c(0, 0.07), guide = "none") +
   labs(x = "PC", y = "Proportion of variance explained")
 
-p_pca / p_var + plot_annotation(title = "PCA 3: VST normalized counts with qSV + sex at birth + race + GC percent + age at death regression")
+p_pca / p_var + 
+    plot_annotation(title = "PCA 3: VST normalized counts with qSV + sex at birth + race + GC percent + age at death regression")
 
 
 ## Save
 # map(
 #   .x = c(".png", ".pdf"),
-#   .f = ~ ggsave(paste0(base_dir, "outputs/figures/for_manuscript/qSVA/PCA3_GENES_normalized_and_regressed_counts", .x),
+#   .f = ~ ggsave(paste0(base_dir, "supp_figures_dir/PCA3_GENES_normalized_and_regressed_counts", .x),
 #                 width = 6, height = 8)
 # )
 ```
@@ -448,4 +450,63 @@ save(
 ## Save normalized & regressed gene counts
 prefix <- "08Mar2024_GENES_qSVAgeSexRaceGC"
 save(df_vsd_regress, file = paste0(base_dir, "objects/", prefix, ".RDS"))
+```
+
+## Plots
+
+### Figure S2C \| PC-covariate correlations before and after covariate regressions
+
+```{r FigS2c.prep}
+df_figS2c <- df_pca1_covar_cor %>% 
+    mutate(regression = "Before", .before = 1) %>% 
+    bind_rows(
+        df_pca3_covar_cor %>% 
+            mutate(regression = "After", .before = 1) 
+    ) %>% 
+    mutate(regression = factor(regression, levels = c("Before", "After"))) %>% 
+    filter(covariate != "dx") %>% 
+    mutate(covariate = factor(covariate, levels = c(covariate_order, paste0("qSV", 1:16))),
+           significance = case_when(
+               p_adj < 0.05 & p_adj > 0.01 ~ "*",
+               p_adj < 0.01 ~ "**",
+               TRUE ~ ""
+           ),
+           type = case_when(
+               covariate %in% technical_covariates ~ "Technical",
+               covariate %in% biological_covariates ~ "Biological",
+               covariate %in% drug_covariates ~ "Toxicological",
+               TRUE ~ "qSV"
+           ) %>% 
+               factor(levels = c("qSV", "Biological", "Toxicological", "Technical"))
+    )
+```
+
+```{r FigS2c.plot, fig.width = 6.5, fig.height = 4}
+df_figS2c %>% 
+    ggplot(aes(x = pc, y = covariate)) +
+    geom_tile(aes(fill = pearsons_r), width = 0.98, height = 0.98, linewidth = 0.5) +
+    geom_text(aes(label = significance), vjust = 0.75, angle = 90) +
+    
+    facet_grid2(regression ~ type, scales = "free") +
+    force_panelsizes(rows = c(1, 4), cols = c(16, length(biological_covariates), length(drug_covariates), length(technical_covariates))) +
+    scale_fill_gradientn(colors = rev(brewer.rdbu(100)), limits = c(-0.43, 0.43)) +
+    scale_color_manual(values = c("yes" = "black", "no" = "transparent"), guide = "none") +
+    coord_flip(clip = "off") +
+    guides(fill = guide_colorbar(title = "Pearson's r", title.hjust = 0.5, title.position = "top")) +
+    labs(x = "PC (> 2% explained var)", y = NULL,
+         title = "C | PC-covariate correlations before and after regression") +
+    theme(legend.position = c(0, -0.4),
+          legend.direction = "horizontal",
+          legend.key.width = unit(0.6, "cm"),
+          legend.key.height = unit(0.15, "cm"),
+          axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 8),
+          strip.background = element_rect(fill = "white", color = "black"),
+          strip.clip = "off",
+          panel.spacing = unit(0.1, "lines")
+    )
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supp_figures_dir, "S2C.PCA_covariate_cor", .x), 
+                width = 6.5, height = 4)
+)
 ```

@@ -1,19 +1,19 @@
 ---
-title: "04b_tox-MCA-sensitivity"
+title: "04b. Rerun toxicology MCA treating missing variables by filling in the individual-level mode"
 author: "Rachel Smith"
 format: html
 editor: visual
 ---
 
-# Rerun toxicology MCA treating missing variables by filling in the individual-level mode
+# Toxicology sensitivity analysis
 
 MCA sensitivity analysis with different treatment of missing variables.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 base_dir <- "~/Documents/PhD/projects/sgacc_wgcna_grcca/"
-figures_dir <- paste0(base_dir, "outputs/figures/supplement/")
-analysis_objects_dir <- paste0(base_dir, "outputs/objects/")
+supp_figures_dir <- paste0(base_dir, "outputs/figures/supplement/")
+objects_dir <- paste0(base_dir, "outputs/objects/")
 ```
 
 ## Libraries
@@ -32,12 +32,13 @@ library(ggh4x)
 # Cleaned covariates
 load(paste0(base_dir, "objects/22Jan2025_covariates.Rdata")) # df_covariates, df_covariates_numeric (generated in 00_clean-covariates.R)
 
-
 ## Define toxicological covariates to include
 drug_covariates <- c(
-    "smoker", "nicotine_cotinine", "alcohol", "opioids", "cannabinoids", # "beta_blockers", # remove beta blockers from analysis because there are too many missing values
-    "major_stimulants_cocaine_included", "minor_stimulants", "anticholinergics", "antidepressants",
-    "anti_epileptics", "anti_histamines", "antipsychotics", "mood_stabilizers", "sedative_hypnotic_anxiolitics", "benzos",
+    "smoker", "nicotine_cotinine", "alcohol", "opioids", "cannabinoids", 
+    # "beta_blockers", # remove beta blockers from analysis because there are too many NAs
+    "major_stimulants_cocaine_included", "minor_stimulants", "anticholinergics",
+    "antidepressants", "anti_epileptics", "anti_histamines", "antipsychotics",
+    "mood_stabilizers", "sedative_hypnotic_anxiolitics", "benzos", 
     "other_psychotropic_drug", "non_psychiatric"
 )
 
@@ -203,13 +204,38 @@ df_mca_covar_cor <- expand_grid(
 ```{r save}
 ## Save for figures
 save(df_eig, df_var_loadings, df_ind_loadings, df_mca_covar_cor,
-     file = paste0(analysis_objects_dir, "R2-drug_MCA_results_modeImpute.Rdata")
+     file = paste0(objects_dir, "R2-drug_MCA_results_modeImpute.Rdata")
 )
 ```
 
-## FIG S3A v2
+## Plots
 
-```{r fig_s3a, fig.width=6.5, fig.height=2.25}
+```{r set_plot_aesthetics}
+## Theme
+theme_set(theme_cowplot() +
+              theme(plot.title = element_text(size = 11),
+                    axis.title = element_text(size = 10),
+                    axis.text = element_text(size = 9),
+                    strip.text = element_text(size = 10),
+                    legend.title = element_text(size = 9),
+                    legend.text = element_text(size = 8),
+                    plot.margin = margin(t = 0, r = 5, l = 0, b = 0)
+              )
+)
+
+## Define diagnosis colors (for plotting)
+## Dx colors
+dx_colors <- c(
+    "Control" = "#0072B2", 
+    "BD" = "#E69F00", 
+    "MDD" = "#009E73", 
+    "SCZ" = "#9966FF"
+)
+```
+
+### Figure S4A \| Matrix of drug use across 185 samples
+
+```{r FigS4a.prep, fig.width=6.5, fig.height=2.25}
 ## Create numeric matrix of imputed toxicology data
 df_drugs_impute <- df_mca_drugs %>%
     
@@ -277,12 +303,13 @@ drugs_order <- tibble(
 
 
 ## Format tibble with arrange rows & columns
-df_figSXXa <- df_drugs_impute %>% 
+df_figS4a <- df_drugs_impute %>% 
     
     # Pivot longer for tile plot
     pivot_longer(3:ncol(.), names_to = "drug", values_to = "value") %>% 
     
-    # Add labels to indicate what 1 and 0 mean (unknown should not be present here since we imputed)
+    # Add labels to indicate what 1 and 0 mean 
+    # (unknown should not be present here since we imputed)
     mutate(
         
         value = case_when(
@@ -324,11 +351,15 @@ matrix_colors <- c(
 
 
 ## Count sample size within each diagnotic group (for plotting)
-dx_sample_size <- df_figSXXa %>% dplyr::select(sample, dx) %>% distinct %>% count(dx) %>% deframe
+dx_sample_size <- df_figS4a %>% 
+    dplyr::select(sample, dx) %>% 
+    distinct %>% 
+    count(dx) %>% 
+    deframe
+```
 
-
-## Plot!
-df_figSXXa %>%
+```{r FigS4a.plot}
+df_figS4a %>%
     
     # Plot layers
     ggplot(aes(x = sample)) +
@@ -339,7 +370,8 @@ df_figSXXa %>%
     force_panelsizes(cols = dx_sample_size) +
     
     # NEW: add diagnostic labels to samples (instead of legend)
-    geom_text(aes(label = dx, x = 25, y = 0), color = "white", size = 3.0, check_overlap = TRUE) +
+    geom_text(aes(label = dx, x = 25, y = 0), 
+              color = "white", size = 3.0, check_overlap = TRUE) +
 
     # Aesthetics
     scale_fill_manual(values = matrix_colors, na.value = "gray") +
@@ -359,15 +391,16 @@ df_figSXXa %>%
     )
 
 ## Save
-# map(
-#     .x = c(".png", ".pdf"),
-#     .f = ~ ggsave(paste0(figures_dir, "R3C1A.sample_toxicology_matrix", .x), width = 6.5, height = 2.25)
-# )
+map(
+    .x = c(".png", ".pdf"),
+    .f = ~ ggsave(paste0(figures_dir, "S4A.sample_toxicology_matrix", .x), 
+                  width = 6.5, height = 2.25)
+)
 ```
 
-## FIG S3B v2
+### Figure S4B \| Variance explained of each toxicology MCA dimension
 
-```{r fig_s3b, fig.width=2.0, fig.height=2.5}
+```{r FigS4b.plot, fig.width=2.0, fig.height=2.5}
 ## MCA eigenvalues
 df_eig %>% 
     mutate(dim = factor(dim, levels = rev(.$dim)),
@@ -388,19 +421,20 @@ df_eig %>%
     )
 
 ## Save
-# map(
-#     .x = c(".png", ".pdf"),
-#     .f = ~ ggsave(paste0(figures_dir, "R3C1B.MCA_eigenvalues", .x), width = 2.0, height = 2.5)
-# )
+map(
+    .x = c(".png", ".pdf"),
+    .f = ~ ggsave(paste0(supp_figures_dir, "S4B.MCA_eigenvalues", .x), 
+                  width = 2.0, height = 2.5)
+)
 ```
 
-## FIG S3C v2
+### Figure S4C \| MCA variable loadings
 
-```{r fig_s3c, fig.width=4.5, fig.height=3.3}
+```{r FigS4c.prep}
 ## MCA variable loadings
 
 ## Prep data
-figSXXC <- df_var_loadings %>% 
+figS4C <- df_var_loadings %>% 
     pivot_longer(3:ncol(.), names_to = "dimension", values_to = "score") %>% 
     filter(use == "yes") %>% 
     mutate(
@@ -411,18 +445,21 @@ figSXXC <- df_var_loadings %>%
     arrange(abs(score))
 
 ## Set color scale min and max
-scale_max <- figSXXC %>% pull(score) %>% abs %>% max
+scale_max <- figS4C %>% pull(score) %>% abs %>% max
 gene_weight_color_scale <- rev(brewer.rdbu(100))
+```
 
+```{r FigS4c.plot, fig.width=4.5, fig.height=3.3}
 ## Plot 
-figSXXC %>%
+figS4C %>%
     
     # layout
     ggplot(aes(x = drug, y = dimension)) +
     geom_point(aes(fill = score, color = significant, size = abs(score)), shape = 21) +
 
     # aesthetics
-    scale_fill_gradientn(colors = gene_weight_color_scale, limits = c(-scale_max, scale_max), name = "Loading") +
+    scale_fill_gradientn(colors = gene_weight_color_scale, 
+                         limits = c(-scale_max, scale_max), name = "Loading") +
     scale_color_manual(values = c("yes" = "black", "no" = "transparent"), guide = "none") +
     scale_size_continuous(limits = c(0, scale_max), range = c(0.1, 5), guide = "none") +
     guides(fill = guide_colorbar(title = "Loading", title.position = "top", title.hjust = 0.5)) +
@@ -441,17 +478,16 @@ figSXXC %>%
     )
 
 ## Save
-# map(
-#     .x = c(".png", ".pdf"),
-#     .f = ~ ggsave(paste0(figures_dir, "R3C1C.MCA_variable_loadings", .x), width = 4.5, height = 3.3)
-# )
+map(
+    .x = c(".png", ".pdf"),
+    .f = ~ ggsave(paste0(supp_figures_dir, "R3C1C.MCA_variable_loadings", .x), 
+                  width = 4.5, height = 3.3)
+)
 ```
 
-## FIG S3D v2
+### Figure S4D \| MCA dimension - covariate correlations
 
-```{r fig_s3d, fig.width=6.5, fig.height=3.4}
-load(paste0(analysis_objects_dir, "R2-drug_MCA_results_modeImpute.Rdata"))
-
+```{r FigS4d.prep}
 ## MCA covariate-dimension correlations
 
 ## Prep
@@ -459,7 +495,7 @@ technical_covariates <- c("mapped_percent", "gc_percent", "five_prime_three_prim
 biological_covariates <- c("age_death", "sex_at_birth", "race", "bmi", "height", "weight", "marital_status", "manner_death", "education", "suicide", "brain_weight")
 
 
-df_figSXXD <- df_mca_covar_cor %>% 
+df_figS4D <- df_mca_covar_cor %>% 
     
     # Remove technical covariates & dx, as well as drugs that did not pass NA filtering
     # Only interested in drugs and biological/demographic covariates
@@ -481,20 +517,23 @@ df_figSXXD <- df_mca_covar_cor %>%
         
     ) %>% 
     arrange(abs(pearsons_r))
-    
-## Plot
-df_figSXXD %>% 
+
+```
+
+```{r FigS4d.plot, fig.width=6.5, fig.height=3.4}
+df_figS4D %>% 
     
     # Layout
     ggplot(aes(x = covariate, y = dimension)) +
-    geom_point(aes(fill = pearsons_r, size = abs(pearsons_r), color = significant), shape = 21) +
+    geom_point(aes(fill = pearsons_r, size = abs(pearsons_r), color = significant), 
+               shape = 21) +
 
     facet_wrap(vars(type), scales = "free_x", nrow = 1) +
     force_panelsizes(cols = c(length(biological_covariates), length(drug_covariates))) +
     
     # Aesthetics
     scale_fill_gradientn(colors = rev(brewer.rdbu(100)), limits = c(-1.0, 1.0), name = "r") +
-    scale_color_manual(values = c("yes" = "black", "no" = "transparent"), guide = "none") + #name = "FDR<0.05") +
+    scale_color_manual(values = c("yes" = "black", "no" = "transparent"), guide = "none") +
     scale_size_continuous(limits = c(0, 1.0), range = c(0.1, 5), guide = "none") +
     
     coord_cartesian(clip = "off") +
@@ -511,21 +550,23 @@ df_figSXXD %>%
     )
 
 ## Save
-# map(
-#     .x = c(".png", ".pdf"),
-#     .f = ~ ggsave(paste0(figures_dir, "R3C1D.MCA_dimension_covariate_cor", .x), width = 6.5, height = 3.4)
-# )
+map(
+    .x = c(".png", ".pdf"),
+    .f = ~ ggsave(paste0(supp_figures_dir, "S4D.MCA_dimension_covariate_cor", .x), 
+                  width = 6.5, height = 3.4)
+)
 ```
 
 ## Fig SXX: Covariate correlation plot including diagnosis and technical variables
 
 ```{r fig_sxx, fig.width=6.5, fig.height=3.4}
 ## Plot
-df_figSXXD %>% 
+df_figS4D %>% 
     
     # Layout
     ggplot(aes(x = covariate, y = dimension)) +
-    geom_point(aes(fill = pearsons_r, size = abs(pearsons_r), color = significant), shape = 21) +
+    geom_point(aes(fill = pearsons_r, size = abs(pearsons_r), color = significant), 
+               shape = 21) +
     
     facet_wrap(vars(type), scales = "free_x", nrow = 1) +
     force_panelsizes(cols = c(
