@@ -1,5 +1,5 @@
 ---
-title: "03. Compare genes in SCZ WGCNA modules with risk gene lists"
+title: "01-03. Compare genes in SCZ WGCNA modules with risk gene lists"
 author: "Rachel Smith"
 format: html
 editor: visual
@@ -63,9 +63,60 @@ df_mods_risk_gene_hypergeometric <- expand_grid(
 ## Save results
 
 ```{r save}
-## Save for supplemental
 save(
     df_mods_risk_gene_hypergeometric,
     file = paste0(objects_dir, "module_risk_gene_hypergeometric.RDS")
+)
+```
+
+## Plots
+
+### Figure S21 \| Risk gene list enrichment across WGCNA modules
+
+```{r FigS21.prep}
+df_figS21 <- df_mods_risk_gene_hypergeometric %>% 
+    mutate(class = ifelse(str_detect(benchmark_list, "SCZ"), "SCZ", benchmark_list) %>% 
+               factor(levels = c("SCZ", "ASD", "BD", "MDD"))) %>% 
+    mutate(benchmark_list = str_remove_all(benchmark_list, "SCZ|\\)|\\(") %>% 
+               str_trim %>% 
+               str_replace(", ", ",\n")
+    ) %>% 
+    filter(module != "geneM0") %>% 
+    mutate(significant = ifelse(p_adj < 0.05, "yes", "no"),
+           very_significant = ifelse(p_adj < 0.001, "***", NA_character_),
+           benchmark_list = ifelse(class != "SCZ", "", benchmark_list),
+           module = factor(module, levels = names(rev(module_colors)))
+    )
+```
+
+```{r FigS21.plot, fig.width = 5, fig.height = 5}
+df_figS21 %>% 
+    ggplot(aes(x = benchmark_list, y = module)) +
+    # Layer 1: fill with variable alpha
+    geom_point(aes(fill = module, size = -log10(p_adj), alpha = -log10(p_adj)), 
+               color = "transparent", shape = 21, stroke = 0.75) +
+    # Layer 2: Border only, no alpha applied
+    geom_point(aes(size = -log10(p_adj), color = significant), 
+               fill = "transparent", shape = 21, stroke = 0.75) +
+
+    geom_text(aes(label = very_significant), size = 4, color = "black", vjust = 0.75) +
+    facet_wrap(vars(class), scales = "free_x", nrow = 1) +
+    force_panelsizes(cols = c(3,1,1,1)) +
+    scale_alpha_continuous(guide = "none") +
+    scale_fill_manual(values = module_colors, guide = "none") +
+    scale_color_manual(values = c("yes" = "black", "no" = "grey"), guide = "none") +
+    guides(color = guide_legend(title = "FDR < 0.05"),
+           size = guide_legend(title = "-log10(FDR)")
+    ) +
+    coord_cartesian(clip = "off") +
+    labs(x = NULL, y = NULL, 
+         title = "Risk gene list enrichment across WGCNA modules") +
+    theme(legend.margin = margin(l = -15))
+
+## Save
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supp_figures_dir, "S21.risk_gene_module_hypergeometric", .x), 
+                width = 5, height = 5)
 )
 ```

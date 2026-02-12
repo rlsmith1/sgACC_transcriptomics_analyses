@@ -1,5 +1,5 @@
 ---
-title: "00. Run WGCNA pipeline on transcripts"
+title: "02c-00. Run WGCNA pipeline on transcripts"
 author: "Rachel Smith"
 format: html
 editor: visual

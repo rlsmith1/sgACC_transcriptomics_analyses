@@ -1,5 +1,5 @@
 ---
-title: "01. Gene ontology and gene set enrichment analysis of current study DEGS"
+title: "03-01. Gene ontology and gene set enrichment analysis of current study DEGS"
 author: "Rachel Smith"
 format: html
 editor: visual
@@ -76,6 +76,26 @@ df_de_fgsea_benchmark <- fgsea(pathways = benchmarking_lists,
 ```{r save}
 save(df_de_fgsea_cell, df_de_fgsea_go, df_de_fgsea_benchmark,
      file = paste0(analysis_objects_dir, "DE_enrichment_benchmark_res.Rdata")
+)
+```
+
+## Export DGE GSEA results as table for supplement
+
+```{r tableS5}
+write_xlsx(
+    list(
+        "A.Cell-type" = df_de_fgsea_cell %>% 
+            mutate(genes = map_chr(leadingEdge, ~ f_collapse_genes(.x, index = 30000))) %>% 
+            dplyr::select(-leadingEdge) %>% unnest(cols = c(genes)),
+        "B.GO" = df_de_fgsea_go %>% 
+            dplyr::filter(padj < 0.05) %>%
+            mutate(genes = map_chr(leadingEdge, ~ f_collapse_genes(.x, index = 30000))) %>% 
+            dplyr::select(-leadingEdge) %>% unnest(cols = c(genes)),
+        "C.Risk genes" = df_de_fgsea_benchmark %>% 
+            mutate(genes = map_chr(leadingEdge, ~ f_collapse_genes(.x, index = 30000))) %>% 
+            dplyr::select(-leadingEdge) %>% unnest(cols = c(genes))
+    ), 
+    path = paste0(tables_dir, "TableS5.DEG_GSEA_enrichments.xlsx")
 )
 ```
 

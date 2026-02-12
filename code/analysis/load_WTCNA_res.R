@@ -6,7 +6,7 @@
 ## Note: This script can only be run after 02_WGCNA
 
 base_dir <- "~/Documents/PhD/projects/sgacc_wgcna_grcca/"
-source(paste0(base_dir, "scripts/load_transcripts.R"))
+source(paste0(base_dir, "code/analysis/load_transcripts.R"))
 
 ## Define parameters for module set of interest
 soft_power <- 2

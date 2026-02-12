@@ -57,15 +57,15 @@ count <- dplyr::count
 
 # Set directories ---------------------------------------------------------
 
-project_dir <- "~/Documents/Postdoc/Projects/ASD-rarevar-annot/"
-data_dir <- paste0(project_dir, "data/")
-functions_dir <- paste0(project_dir, "code/functions/")
-scripts_dir <- paste0(project_dir, "code/analysis/")
+base_dir <- "~/Documents/PhD/projects/sgacc_wgcna_grcca/"
+data_dir <- paste0(base_dir, "data/")
+functions_dir <- paste0(base_dir, "code/functions/")
+scripts_dir <- paste0(base_dir, "code/analysis/")
 
-objects_dir <- paste0(project_dir, "outputs/objects/")
-figures_dir <- paste0(project_dir, "outputs/figures/main/")
-supp_figures_dir <- paste0(project_dir, "outputs/figures/supplement/")
-tables_dir <- paste0(project_dir, "outputs/tables/")
+objects_dir <- paste0(base_dir, "outputs/objects/")
+figures_dir <- paste0(base_dir, "outputs/figures/main/")
+supp_figures_dir <- paste0(base_dir, "outputs/figures/supplement/")
+tables_dir <- paste0(base_dir, "outputs/tables/")
 
 
 # Load data ---------------------------------------------------------------

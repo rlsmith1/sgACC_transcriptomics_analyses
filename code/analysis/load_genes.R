@@ -7,7 +7,7 @@
 
 
 base_dir <- "~/Documents/PhD/projects/sgacc_wgcna_grcca/"
-source(paste0(base_dir, "scripts/setup.R"))
+source(paste0(base_dir, "code/analysis/setup.R"))
 
 
 ### SET DIRECTORY AND LOAD DATA ###

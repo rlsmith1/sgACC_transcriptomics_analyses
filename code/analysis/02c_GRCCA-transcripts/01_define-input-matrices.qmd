@@ -1,5 +1,5 @@
 ---
-title: "01. Define X.mat, Y.mat, and C.mat to include in transcript-level GRCCA analysis"
+title: "02c-01. Define X.mat, Y.mat, and C.mat to include in transcript-level GRCCA analysis"
 author: "Rachel Smith"
 format: html
 editor: visual

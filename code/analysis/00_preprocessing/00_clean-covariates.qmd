@@ -1,5 +1,5 @@
 ---
-title: "00. Tidy covariate data for downstream analyses"
+title: "00-00. Tidy covariate data for downstream analyses"
 author: "Rachel Smith"
 format: html
 editor: visual
@@ -11,6 +11,7 @@ This script loads covariate data from multiple sources and combines it for downs
 knitr::opts_chunk$set(echo = TRUE)
 base_dir <- "~/Documents/PhD/projects/sgacc_wgcna_grcca/"
 objects_dir <- paste0(base_dir, "outputs/objects/")
+tables_dir <- paste0(base_dir, "outputs/tables/")
 ```
 
 ## Libraries
@@ -160,4 +161,16 @@ df_covariates_numeric <- df_covariates %>%
 # save(df_covariates, df_covariates_numeric,
 #      file = paste0(objects_dir, "22Jan2025_covariates.Rdata")
 # )
+```
+
+## Export covariates table for supplement
+
+```{r tableS1}
+write_xlsx(df_covariates %>% 
+               mutate(dx = factor(dx, levels = names(dx_colors))) %>% 
+               arrange(dx, sex_at_birth, race, age_death) %>% 
+               mutate_at(vars(c(bmi, height, weight)), ~ as.numeric(.x)) %>% 
+               dplyr::select(-suicide, -sample), 
+           path = paste0(tables_dir, "TableS1.covariate_information.xlsx")
+)
 ```

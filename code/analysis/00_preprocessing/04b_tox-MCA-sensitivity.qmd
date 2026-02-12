@@ -1,11 +1,9 @@
 ---
-title: "04b. Rerun toxicology MCA treating missing variables by filling in the individual-level mode"
+title: "00-04b. Sensitivity analysis: Rerun toxicology MCA treating missing variables by filling in the individual-level mode"
 author: "Rachel Smith"
 format: html
 editor: visual
 ---
-
-# Toxicology sensitivity analysis
 
 MCA sensitivity analysis with different treatment of missing variables.
 
@@ -24,6 +22,8 @@ library(DESeq2)
 library(MASS)
 library(RColorBrewer)
 library(ggh4x)
+library(cowplot)
+library(pals)
 ```
 
 ## Load data
@@ -231,6 +231,9 @@ dx_colors <- c(
     "MDD" = "#009E73", 
     "SCZ" = "#9966FF"
 )
+
+## Define color scale
+gene_weight_color_scale <- brewer.rdbu(100) %>% rev
 ```
 
 ### Figure S4A \| Matrix of drug use across 185 samples
@@ -393,7 +396,7 @@ df_figS4a %>%
 ## Save
 map(
     .x = c(".png", ".pdf"),
-    .f = ~ ggsave(paste0(figures_dir, "S4A.sample_toxicology_matrix", .x), 
+    .f = ~ ggsave(paste0(supp_figures_dir, "S4A.sample_toxicology_matrix", .x), 
                   width = 6.5, height = 2.25)
 )
 ```
@@ -446,7 +449,6 @@ figS4C <- df_var_loadings %>%
 
 ## Set color scale min and max
 scale_max <- figS4C %>% pull(score) %>% abs %>% max
-gene_weight_color_scale <- rev(brewer.rdbu(100))
 ```
 
 ```{r FigS4c.plot, fig.width=4.5, fig.height=3.3}
@@ -462,8 +464,9 @@ figS4C %>%
                          limits = c(-scale_max, scale_max), name = "Loading") +
     scale_color_manual(values = c("yes" = "black", "no" = "transparent"), guide = "none") +
     scale_size_continuous(limits = c(0, scale_max), range = c(0.1, 5), guide = "none") +
-    guides(fill = guide_colorbar(title = "Loading", title.position = "top", title.hjust = 0.5)) +
-    
+    guides(fill = guide_colorbar(title = "Loading", 
+                                 title.position = "top", 
+                                 title.hjust = 0.5)) +
     coord_cartesian(clip = "off") +
     labs(y = NULL, x = NULL, 
          title = "C | Variable loadings") +
@@ -480,7 +483,7 @@ figS4C %>%
 ## Save
 map(
     .x = c(".png", ".pdf"),
-    .f = ~ ggsave(paste0(supp_figures_dir, "R3C1C.MCA_variable_loadings", .x), 
+    .f = ~ ggsave(paste0(supp_figures_dir, "S4C.MCA_variable_loadings", .x), 
                   width = 4.5, height = 3.3)
 )
 ```
@@ -499,7 +502,11 @@ df_figS4D <- df_mca_covar_cor %>%
     
     # Remove technical covariates & dx, as well as drugs that did not pass NA filtering
     # Only interested in drugs and biological/demographic covariates
-    filter(covariate %in% c(names(dx_colors), biological_covariates, include_drugs, technical_covariates)) %>% 
+    filter(covariate %in% c(names(dx_colors), 
+                            biological_covariates, 
+                            include_drugs, 
+                            technical_covariates)
+           ) %>% 
     
     # Format for plotting
     mutate(
@@ -513,7 +520,12 @@ df_figS4D <- df_mca_covar_cor %>%
             TRUE ~ "Diagnosis"
         ) %>% 
             factor(levels = c("Diagnosis", "Demographic", "Technical", "Toxicological")),
-        covariate = factor(covariate, levels = c(names(dx_colors), biological_covariates, technical_covariates, rev(drugs_order)))
+        covariate = factor(covariate, 
+                           levels = c(names(dx_colors), 
+                                      biological_covariates, 
+                                      technical_covariates, 
+                                      rev(drugs_order))
+                           )
         
     ) %>% 
     arrange(abs(pearsons_r))
@@ -528,9 +540,8 @@ df_figS4D %>%
     geom_point(aes(fill = pearsons_r, size = abs(pearsons_r), color = significant), 
                shape = 21) +
 
-    facet_wrap(vars(type), scales = "free_x", nrow = 1) +
-    force_panelsizes(cols = c(length(biological_covariates), length(drug_covariates))) +
-    
+    facet_wrap(vars(type), scales = "free_x", space = "free_x", nrow = 1) +
+
     # Aesthetics
     scale_fill_gradientn(colors = rev(brewer.rdbu(100)), limits = c(-1.0, 1.0), name = "r") +
     scale_color_manual(values = c("yes" = "black", "no" = "transparent"), guide = "none") +

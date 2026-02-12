@@ -1,0 +1,597 @@
+---
+title: "02b-06b. Sensitivity analyses: robustness of GRCCA results to grouping structure"
+author: "Rachel Smith"
+format: html
+editor: visual
+---
+
+Compare GRCCA results across distinct grouping structures:
+
+\(1\) Plausible WGCNA solutions (biological groupings)
+
+\(2\) Random groupings
+
+\(3\) No grouping at all (RCCA; separate scripts)
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+base_dir <- "~/Documents/PhD/projects/sgacc_wgcna_grcca/"
+```
+
+## Setup
+
+```{r load_data}
+source(paste0(scripts_dir, "load_WGCNA_res.R"))
+```
+
+## Load group vector sensitivity GRCCA data
+
+```{r load_sensitivity}
+sensitivity_dir <- paste0(objects_dir, "GRCCA_results_objects/")
+sensitivity_objs <- list.files(paste0(objects_dir, "GRCCA_results_objects/"))
+
+
+## Real WGCNA groupings
+wgcna_groups <- sensitivity_objs[!str_detect(sensitivity_objs, "seed")]
+
+l_wgcna_groups_res <- list()
+for (obj in wgcna_groups){
+    
+    ## Identify WGCNA parameters used
+    parameters <- str_extract(obj, "sft[^_]*_minSize[^_]*_cutHeight[^_]*")
+    minimum_size <- str_extract(parameters, "(?<=minSize)\\d+") %>% as.numeric
+    tree_cut_height <- str_extract(parameters, "(?<=cutHeight)\\d+\\.\\d+") %>% as.numeric
+    
+    ## Identify respective module assignments
+    df_modules_filt_sens <- df_modules %>% 
+        filter(min_size == minimum_size & cut_height == tree_cut_height) %>% 
+        unite(mod_set, c(sft, min_size, cut_height), sep = "_") %>% 
+        mutate(module = paste0("geneM", module) %>% 
+                   factor(levels = paste0("geneM", module) %>% 
+                              unique))
+    
+    ## Load GRCCA results
+    load(paste0(sensitivity_dir, obj))
+    
+    ## Negate weights/structure correlations if SCZ is negative 
+    ## (want everything to be the same sign)
+    SCZ_r <- df_y_res %>% filter(covariate == "SCZ") %>% pull(pearsons_r)
+    
+    if (SCZ_r < 0) {
+        df_lvs <- df_lvs %>% mutate_at(vars(c(lvx, lvy)), ~ -.x)
+        df_y_res <- df_y_res %>% mutate_at(vars(c(weight, z_score, pearsons_r)), ~ -.x)
+        df_x_res <- df_x_res %>% mutate_at(vars(c(weight, z_score, pearsons_r)), ~ -.x)
+    }
+    
+    ## Add gene symbols and module assignments to X res
+    df_x_res <- df_x_res %>% 
+        left_join(df_ensembl_to_symbol) %>% # add gene symbols
+        left_join(df_modules_filt_sens) # add module assignment
+    
+    ## Save as list
+    l_tmp <- list(
+        "latent_variables" = df_lvs,
+        "model_results" = df_results,
+        "y_res" = df_y_res,
+        "x_res" = df_x_res
+    )
+    
+    ## Append to list
+    l_wgcna_groups_res[[parameters]] <- l_tmp
+    
+}
+
+
+
+## Random (permuted) WGCNA groupings
+random_groups <- sensitivity_objs[str_detect(sensitivity_objs, "seed")]
+
+l_random_groups_res <- list()
+for (obj in random_groups){
+    
+    ## Identify seed used
+    seed <- str_extract(obj, "(?<=seed)\\d+")
+
+    ## Identify respective module assignments
+    minimum_size <- 40
+    tree_cut_height <- 0.98
+    set.seed(seed)
+    df_modules_filt_sens <- df_modules %>% 
+        filter(min_size == minimum_size & cut_height == tree_cut_height) %>% 
+        unite(mod_set, c(sft, min_size, cut_height), sep = "_") %>% 
+        mutate(module = paste0("geneM", module) %>% 
+                   factor(levels = paste0("geneM", module) %>% 
+                              unique)) %>% 
+        
+        ## For *random* gene assignment within modules
+        mutate(module = sample(module)) # turn off if not doing random assignment
+        
+    ## Load GRCCA results
+    load(paste0(sensitivity_dir, obj))
+    
+    ## Negate weights/structure correlations if SCZ is negative 
+    ## (want everything to be the same sign)
+    SCZ_r <- df_y_res %>% filter(covariate == "SCZ") %>% pull(pearsons_r)
+    
+    if (SCZ_r < 0) {
+        df_lvs <- df_lvs %>% mutate_at(vars(c(lvx, lvy)), ~ -.x)
+        df_y_res <- df_y_res %>% mutate_at(vars(c(weight, z_score, pearsons_r)), ~ -.x)
+        df_x_res <- df_x_res %>% mutate_at(vars(c(weight, z_score, pearsons_r)), ~ -.x)
+    }
+    
+    ## Add gene symbols and module assignments to X res
+    df_x_res <- df_x_res %>% 
+        left_join(df_ensembl_to_symbol) %>% # add gene symbols
+        left_join(df_modules_filt_sens) # add module assignment
+    
+    ## Save as list
+    l_tmp <- list(
+        "latent_variables" = df_lvs,
+        "model_results" = df_results,
+        "y_res" = df_y_res,
+        "x_res" = df_x_res
+    )
+    
+    ## Append to list
+    seed_name <- paste0("seed", seed) 
+    l_random_groups_res[[seed_name]] <- l_tmp
+    
+}
+```
+
+## Load actual GRCCA results
+
+```{r load_actual}
+load(paste0(analysis_objects_dir, "GRCCA_results.Rdata")) # load actual GRCCA results
+# df_results, df_lvs, df_y_res, df_x_res
+```
+
+## Format group vector comparisons
+
+```{r format_wgcna}
+## Module sizes
+map(l_wgcna_groups_res, ~ .x$y_res)
+
+## Model results
+df_model_res_wgcna_groups <- map_dfr(l_wgcna_groups_res, ~.x$model_results) %>% 
+    filter(set %in% 1:10) %>% 
+    mutate(mod_set = rep(names(l_wgcna_groups_res), each = 10) %>% str_remove("sft3_"), .before = 1) %>% 
+    bind_rows(
+        df_results %>% mutate(mod_set = "actual (minSize40_cutHeight0.98)")
+    ) 
+
+
+
+## X and Y results
+
+# format Y
+df_y_res_wgcna_groups <- map_dfr(l_wgcna_groups_res, ~.x$y_res) %>% 
+    mutate(mod_set = rep(names(l_wgcna_groups_res), each = length(df_y_res$covariate)) %>% str_remove("sft3_"), .before = 1) %>% 
+    bind_rows(
+        df_y_res %>% mutate(mod_set = "actual (minSize40_cutHeight0.98)")
+    ) %>% 
+    
+    select(mod_set, covariate, pearsons_r) %>% 
+    pivot_wider(names_from = mod_set, values_from = pearsons_r) %>% 
+    
+    # make sure every column is numeric
+    dplyr::select(-covariate)
+
+# format X
+df_x_res_wgcna_groups <- map_dfr(l_wgcna_groups_res, ~.x$x_res) %>% 
+    mutate(mod_set = rep(names(l_wgcna_groups_res), each = length(df_x_res$ensembl_gene_id)) %>% str_remove("sft3_"), .before = 1) %>% 
+    bind_rows(
+        df_x_res %>% mutate(mod_set = "actual (minSize40_cutHeight0.98)")
+    ) %>% 
+    
+    select(mod_set, ensembl_gene_id, pearsons_r) %>% 
+    pivot_wider(names_from = mod_set, values_from = pearsons_r) %>% 
+    
+    # make sure every column is numeric
+    dplyr::select(-ensembl_gene_id)
+
+
+
+## Risk gene enrichment
+l_benchmarking_res_wgcna_groups <- map( .x = l_wgcna_groups_res, 
+     .f = ~ fgsea(pathways = benchmarking_lists, 
+                  stats = .x$x_res %>% 
+                      arrange(-pearsons_r) %>% 
+                      dplyr::select(ensembl_gene_id, pearsons_r) %>% 
+                      deframe, 
+                  eps = 0
+     ) %>% 
+         as_tibble() %>% 
+         dplyr::rename("benchmark_list" = "pathway") %>% 
+         arrange(-abs(NES))
+)
+l_benchmarking_res_wgcna_groups[["actual (minSize40_cutHeight0.98)"]] <- fgsea(
+    pathways = benchmarking_lists, 
+    stats = df_x_res %>% 
+        arrange(-pearsons_r) %>% 
+        dplyr::select(ensembl_gene_id, pearsons_r) %>% 
+        deframe, 
+    eps = 0 ) %>% 
+    as_tibble() %>% 
+    dplyr::rename("benchmark_list" = "pathway") %>% 
+    arrange(-abs(NES))
+
+df_benchmarking_res_wgcna_groups <- bind_rows(l_benchmarking_res_wgcna_groups) %>% 
+    mutate(mod_set = rep(names(l_benchmarking_res_wgcna_groups), each = 6) %>% 
+               str_remove("sft3_"), .before = 1)
+```
+
+## Format random groups comparisons
+
+```{r format_random}
+## Model results
+df_model_res_random_groups <- map_dfr(l_random_groups_res, ~.x$model_results) %>% 
+    filter(set %in% 1:10) %>% 
+    mutate(seed = rep(names(l_random_groups_res), each = 10), .before = 1) %>% 
+    bind_rows(
+        df_results %>% mutate(seed = "actual")
+    )
+ 
+
+## X and Y results
+
+# format Y
+df_y_res_random_groups <- map_dfr(l_random_groups_res, ~.x$y_res) %>% 
+    mutate(seed = rep(names(l_random_groups_res), each = length(df_y_res$covariate)), .before = 1) %>% 
+    bind_rows(
+        df_y_res %>% mutate(seed = "actual")
+    ) %>% 
+    
+    select(seed, covariate, pearsons_r) %>% 
+    pivot_wider(names_from = seed, values_from = pearsons_r) %>% 
+    
+    # make sure every column is numeric
+    dplyr::select(-covariate)
+
+# format X
+df_x_res_random_groups <- map_dfr(l_random_groups_res, ~.x$x_res) %>% 
+    mutate(seed = rep(names(l_random_groups_res), 
+                      each = length(df_x_res$ensembl_gene_id)), .before = 1) %>% 
+    bind_rows(
+        df_x_res %>% mutate(seed = "actual")
+    ) %>% 
+    
+    select(seed, ensembl_gene_id, pearsons_r) %>% 
+    pivot_wider(names_from = seed, values_from = pearsons_r) %>% 
+    
+    # make sure every column is numeric
+    dplyr::select(-ensembl_gene_id)
+
+
+## Risk gene enrichment
+l_benchmarking_res_random_groups <- map( .x = l_random_groups_res, 
+                                        .f = ~ fgsea(
+                                            pathways = benchmarking_lists,
+                                            stats = .x$x_res %>% 
+                                                arrange(-pearsons_r) %>% 
+                                                dplyr::select(ensembl_gene_id, pearsons_r) %>% 
+                                                deframe, 
+                                            eps = 0
+                                        ) %>% 
+                                            as_tibble() %>% 
+                                            dplyr::rename("benchmark_list" = "pathway") %>% 
+                                            arrange(-abs(NES))
+)
+l_benchmarking_res_random_groups[["actual"]] <- fgsea(pathways = benchmarking_lists, 
+                                                      stats = df_x_res %>% 
+                                                          arrange(-pearsons_r) %>% 
+                                                          dplyr::select(ensembl_gene_id, pearsons_r) %>% 
+                                                          deframe, 
+                                                      eps = 0 ) %>% 
+    as_tibble() %>% 
+    dplyr::rename("benchmark_list" = "pathway") %>% 
+    arrange(-abs(NES))
+
+df_benchmarking_res_random_groups <- bind_rows(l_benchmarking_res_random_groups) %>% 
+    mutate(seed = rep(names(l_benchmarking_res_random_groups), each = 6), .before = 1)
+```
+
+## Save results
+
+```{r save}
+## Save GRCCA results with WGCNA module solutions
+save(
+    df_model_res_wgcna_groups, df_x_res_wgcna_groups, 
+    df_y_res_wgcna_groups, df_benchmarking_res_wgcna_groups,
+    file = paste0(objects_dir, "GRCCA_sensitivity_wgcna.Rdata")
+)
+```
+
+## Plots
+
+### Figure S11A \| Model significance across WGCNA solutions
+
+```{r FigS11a, fig.width = 6.5, fig.height = 2}
+df_model_res_wgcna_groups %>% 
+    group_by(mod_set) %>% 
+    mutate(best = ifelse(pval == min(pval), 1, 0)) %>% 
+    mutate(best = ifelse(set == 5, 0, best)) %>% 
+    mutate(best = factor(best)) %>%
+    mutate(mod_set = str_replace(mod_set, "_", ", ")) %>% 
+
+    ggplot(aes(x = factor(varx), y = -log10(pval))) +
+    geom_hline(yintercept = -log10(0.005), color = "grey", linewidth = 0.5) +
+    geom_segment(aes(y = 0, yend = -log10(pval), color = mod_set, linetype = mod_set),
+                 position = position_dodge(width = 0.6)
+    ) +
+    geom_point(aes(fill = mod_set, size = correl, shape = best), 
+               position = position_dodge(width = 0.6)
+    ) +
+    scale_size_continuous(range = c(1, 4)) +
+    scale_shape_manual(values = c("0" = 21, "1" = 23), guide = "none") +
+    scale_color_manual(values = c("actual (minSize40, cutHeight0.98)" = "#F8766D", 
+                                  rep("gray", 3))) +
+    scale_fill_manual(values = c("actual (minSize40, cutHeight0.98)" = "#F8766D", 
+                                 rep("gray", 3))) +
+    scale_linetype_manual(values = c("actual (minSize40, cutHeight0.98)" = "solid", 
+                                     "minSize30, cutHeight0.95" = "dashed", 
+                                     "minSize30, cutHeight0.98" = "dotted", 
+                                     "minSize40, cutHeight0.95" = "twodash")
+    ) +
+    guides(fill = guide_legend(title = NULL), color = guide_legend(title = NULL),
+           size = guide_legend(title = "X-Y cor"), linetype = guide_legend(title = NULL)) +
+    coord_cartesian(clip = "off") +
+    labs(x = "X variance explained", y = "-log10(model P value)",
+         title = "A | Model significance across WGCNA solutions") +
+    theme(
+        legend.key.height = unit(0.2, "cm"),
+        legend.title = element_text(size = 8),
+        legend.position = c(0.025, 0.68),
+        legend.spacing = unit(0.2, "lines")
+    )
+
+## Save
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supp_figures_dir, "S11A.wgcna_groups_model_significance", .x), 
+                width = 6.5, height = 2)
+)
+```
+
+### Figure S11B \| WGCNA X and Y results correlations
+
+```{r FigS11b, fig.width = 4.0, fig.height = 3.75}
+## Write plotting functions
+plot_y_func <- function(data, mapping, ...) {
+    ggplot(data = data, mapping = mapping) +
+        geom_point(alpha = 0.5) +
+        #geom_smooth(method = "lm", color = "maroon", se = FALSE, linewdith = 0.25) +
+        stat_cor(aes(label = ..r.label..), size = 3, color = "maroon")
+}
+plot_x_func <- function(data, mapping, second_df, ...) {
+    ggplot(data = second_df, mapping = mapping) +  
+        geom_point(alpha = 0.5, size = 0.5) +
+        stat_cor(aes(label = ..r.label..), size = 3, label.x.npc = 0.4, label.y.npc = 0.1, color = "maroon")
+}
+
+## Plot
+ggpairs(df_y_res_wgcna_groups %>% 
+            dplyr::rename_all(~str_replace(.x, "_", ",\n")) %>% 
+            dplyr::rename_at(4, ~"actual"),
+        lower = list(continuous = plot_y_func),  # Scatter + best fit line
+        upper = list(continuous = wrap(plot_x_func, 
+                                       second_df = df_x_res_wgcna_groups %>% 
+                                           dplyr::rename_all(~str_replace(.x, "_", ",\n")) %>% 
+                                           dplyr::rename_at(4, ~"actual")
+                                       )
+        ),  # Correlation values in upper triangle
+        diag = list(continuous = wrap("blank"))  # Remove density plot from diagonal
+) + 
+    theme_bw() +
+    labs(title = "B | Model feature correlations") +
+    theme(plot.title = element_text(face = "bold", size = 11),
+          strip.text = element_text(size = 8.25),
+          strip.clip = "off",
+          strip.background = element_blank(),
+          panel.spacing = unit(0.2, "lines")
+    )
+
+## Save
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supp_figures_dir, "S11B.wgcna_groups_x_y_cor", .x), 
+                width = 4.0, height = 3.75)
+)
+```
+
+### Figure S11C \| Enrichment for risk genes across WGCNA solutions
+
+```{r FigS11c, fig.height = 3.75, fig.width = 2.4}
+df_benchmarking_res_wgcna_groups %>%
+    mutate(significant = ifelse(padj < 0.05, "yes", "no")) %>%
+    mutate(class = ifelse(str_detect(benchmark_list, "SCZ"), 
+                          "SCZ",
+                          benchmark_list),
+           benchmark_list = ifelse(str_detect(benchmark_list, "SCZ"),
+                                   str_remove(benchmark_list, "SCZ \\(") %>% 
+                                       str_remove("\\)") %>% 
+                                       str_replace(", ", ",\n"), 
+                                   ""
+           ),
+           mod_set = str_replace(mod_set, "_", ",\n")
+    ) %>% 
+    
+    ggplot(aes(x = benchmark_list, y = mod_set)) +
+    geom_point(aes(fill = NES, size = -log10(padj), color = significant), 
+               stroke = 1, shape = 21) +
+    
+    facet_wrap(vars(class), ncol = 1, scales = "free_y") +
+    force_panelsizes(rows = c(1,1,1,3)) +
+    scale_size_continuous(range = c(0.5, 7)) +
+    scale_color_manual(values = c("yes" = "black", "no" = "transparent"), guide = "none") +
+    scale_fill_gradientn(colors = gene_weight_color_scale, limits = c(-1.61, 1.61)) +
+    guides(fill = guide_colorbar(title = "NES", 
+                                 title.position = "left", 
+                                 title.hjust = 0.5), 
+           size = guide_legend(title = "-log10(FDR)", 
+                               title.position = "left", 
+                               title.hjust = 0.5)) +
+    coord_flip(clip = "off") +
+    labs(x = NULL, y = NULL,
+         title = "C | Risk gene enrichments \nacross WGCNA solutions") +
+    theme(
+        legend.key.height = unit(0.5, "cm"),
+        legend.key.width = unit(0.25, "cm"),
+        legend.title = element_text(size = 8, angle = 90, margin = margin(r = 0)),
+        legend.text = element_text(margin = margin(r = -1)),
+        legend.spacing = unit(0.2, "lines"),
+        legend.position = c(-0.32, 0.75),
+        panel.spacing = unit(0.05, "lines"),
+        strip.text = element_text(size = 9),
+        axis.text.x = element_text(size = 9, angle = 45, hjust = 0.9),
+        plot.margin = margin(b = -10)
+    )
+
+## Save
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supp_figures_dir, "S11C.wgcna_groups_benchmarking", .x), 
+                width = 2.4, height = 3.75)
+)
+```
+
+### Figure S12A \| Model significant across random solutions
+
+```{r FigS12a, fig.width = 6.5, fig.height = 2}
+seeds <- df_model_res_random_groups %>% filter(seed != "actual") %>% pull(seed) %>% unique
+df_model_res_random_groups %>% 
+    group_by(seed) %>% 
+    mutate(best = ifelse(pval == min(pval), 1, 0)) %>%
+    mutate(best = ifelse(seed %in% c("seed1856", "seed3144", "seed3578", "seed9883") & 
+                             set == 4, 
+                         0, 
+                         best)) %>%
+    mutate(best = factor(best)) %>%
+    arrange(desc(seed)) %>% 
+
+    ggplot(aes(x = factor(varx), y = -log10(pval))) +
+    geom_hline(yintercept = -log10(0.005), color = "grey", linewidth = 0.5) +
+    geom_segment(aes(y = 0, yend = -log10(pval), color = seed),
+                 position = position_dodge(width = 0.80)
+    ) +
+    geom_point(aes(fill = seed, size = correl, shape = best), 
+               position = position_dodge(width = 0.80)
+    ) +
+    scale_color_manual(values = c("actual" = "#F8766D", rep("gray", 10))) +
+    scale_fill_manual(values = c("actual" = "#F8766D", 
+                                 setNames(rep(adjustcolor("gray", alpha.f = 0.5), 10), seeds)),
+                      guide = "none"
+    ) +
+    scale_size_continuous(range = c(1, 4)) +
+    scale_shape_manual(values = c("0" = 21, "1" = 23), guide = "none") +
+    guides(color = guide_legend(title = NULL), size = guide_legend(title = "X-Y cor")) +
+    coord_cartesian(clip = "off") +
+    labs(x = "X variance explained", y = "-log10(model P value)",
+         title = "A | Model significance across random groupings") +
+    theme(
+        legend.key.height = unit(0.2, "cm"),
+        legend.title = element_text(size = 8),
+        legend.position = c(0.025, 0.60),
+        legend.spacing = unit(0.5, "lines")
+    )
+
+## Save
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supp_figures_dir, "S12A.random_groups_model_significance", .x), 
+                width = 6.5, height = 2)
+)
+```
+
+### Figure S12B \| X and Y results correlations across random groupings
+
+```{r FigS12b, fig.width = 6.5, fig.height = 2}
+df_y_res_random_groups %>% 
+    pivot_longer(contains("seed"), names_to = "seed", values_to = "random") %>%
+    mutate(type = "Covariates \n(ry)") %>% 
+    
+    bind_rows(
+        df_x_res_random_groups %>% 
+            pivot_longer(contains("seed"), names_to = "seed", values_to = "random") %>% 
+            mutate(type = "Genes \n(rx)")
+    ) %>% 
+    
+    ggplot(aes(x = random, y = actual)) +
+    geom_point(alpha = 0.5, size = 0.5) +
+    stat_cor(aes(label = ..r.label..), label.y = 0.8, color = "maroon", size = 2.75) +
+    facet_grid(type ~ seed) +
+    scale_x_continuous(breaks = c(-0.5, 0.5)) +
+    labs(x = "Random grouping structure correlations", y = "Actual structure correlations",
+         title = "B | Model feature correlations") +
+    coord_cartesian(clip = "off") +
+    theme_bw() +
+    theme(
+        strip.text.x = element_blank(),
+        strip.text.y = element_text(size = 8.5),
+        strip.background = element_blank(),
+        strip.clip = "off",
+        plot.title = element_text(face = "bold", size = 11),
+        axis.title = element_text(size = 10),
+        axis.text = element_text(size = 8),
+        panel.border = element_rect(linewidth = 0.30),
+        plot.margin = margin(r = -5)
+    )
+
+## Save
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supp_figures_dir, "S12B.random_groups_x_y_cor", .x), 
+                width = 6.5, height = 2)
+)
+```
+
+### Figure S12C \| Enrichment for risk genes
+
+```{r FigS12c, fig.height = 2, fig.width = 6.5}
+df_benchmarking_res_random_groups %>%
+    mutate(significant = ifelse(padj < 0.05, "yes", "no")) %>%
+    mutate(class = ifelse(str_detect(benchmark_list, "SCZ"), 
+                          "SCZ",
+                          benchmark_list),
+           benchmark_list = ifelse(str_detect(benchmark_list, "SCZ"),
+                                   str_remove(benchmark_list, "SCZ \\(") %>% 
+                                       str_remove("\\)") %>% 
+                                       str_replace(", ", ",\n"), 
+                                   ""
+           )
+    ) %>% 
+    
+    # Plot
+    ggplot(aes(x = benchmark_list, y = seed)) +
+    geom_point(aes(fill = NES, size = -log10(padj), color = significant), 
+               stroke = 1, shape = 21) +
+    
+    facet_wrap(vars(class), nrow = 1, scales = "free_x") +
+    force_panelsizes(cols = c(1,1,1,3)) +
+    scale_size_continuous(range = c(0.1, 5)) +
+    scale_color_manual(values = c("yes" = "black", "no" = "transparent"), guide = "none") +
+    scale_fill_gradientn(colors = gene_weight_color_scale, limits = c(-1.61, 1.61)) +
+    guides(fill = guide_colorbar(title = "NES", 
+                                 title.position = "left", 
+                                 title.hjust = 0.5), 
+           size = guide_legend(title = "-log10(FDR)", 
+                               title.position = "left", 
+                               title.hjust = 0.5)) +
+    coord_cartesian(clip = "off") +
+    labs(x = NULL, y = NULL,
+         title = "C | Risk gene enrichments across random groupings") +
+    theme(
+        legend.key.height = unit(0.5, "cm"),
+        legend.key.width = unit(0.25, "cm"),
+        legend.title = element_text(size = 8, angle = 90),
+        legend.spacing = unit(0.2, "lines"),
+        legend.margin = margin(l = -10)
+    )
+
+## Save
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supp_figures_dir, "S12C.random_groups_benchmarking", .x), 
+                width = 6.5, height = 2)
+)
+```

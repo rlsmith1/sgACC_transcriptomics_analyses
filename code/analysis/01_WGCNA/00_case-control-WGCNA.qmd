@@ -1,5 +1,5 @@
 ---
-title: "00. Run WGCNA pipeline"
+title: "01-00. Run WGCNA pipeline"
 author: "Rachel Smith"
 format: html
 editor: visual
@@ -177,4 +177,77 @@ plotDendroAndColors(gene_tree, selected_colors,
 dev.off()
 ```
 
-## 
+### Figure S6A \| Soft-thresholding power selection
+
+```{r FigS6a.plot, fig.width = 5, fig.height = 2}
+## Model fit of each soft thresholding power
+p1 <- df_sft %>% 
+    ggplot(aes(x = power, y = -sign(slope)*sft_r_sq)) +
+    geom_point(aes(color = power == 3), size = 1) +
+    geom_hline(yintercept = 0.9, lty = 2, color = "maroon") +
+    scale_color_manual(values = c("TRUE" = "maroon", "FALSE" = "black"), guide = "none") +
+    scale_x_continuous(breaks = seq(2, 16, by = 2)) +
+    labs(
+        x = "Soft threshold (power)",
+        y = "Scale free topology model fit \n(signed R^2)"
+    ) +
+    theme(
+        panel.grid.major.x = element_line(color = "darkgrey", size = 0.2)
+    )
+
+## Median connectivity as a function of the soft-thresholding power 
+## (want to remain reasonably high (in the 100s) or above)
+p2 <- df_sft %>% 
+    ggplot(aes(x = power, y = median_k)) +
+    geom_point(aes(color = power == 3), size = 1) +
+    #geom_text(aes(label = power), size = 3) +
+    geom_hline(yintercept = 100, lty = 2, color = "maroon") +
+    scale_color_manual(values = c("TRUE" = "maroon", "FALSE" = "black"), guide = "none") +
+    scale_x_continuous(breaks = seq(2, 16, by = 2)) +
+    labs(
+        x = "Soft threshold (power)",
+        y = "Median connectivity"
+    ) +
+    theme(
+        panel.grid.major.x = element_line(color = "darkgrey", size = 0.2)#,
+    )
+
+## Combine and save
+p1 + p2 + plot_annotation(title = "A | Soft-thresholding power fit to data")
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supp_figures_dir, "S6A.SFT_fit", .x), 
+                width = 5, height = 2)
+)
+```
+
+### Figure S6B \| Module stability across parameters
+
+```{r FigS6b.plot, fig.width = 5, fig.height = 6.5}
+df_modules %>%
+    group_by(sft, min_size, cut_height) %>%
+    dplyr::count(module, color) %>% 
+    #filter(cut_height != 1) %>%
+    
+    ggplot(aes(x = module)) +
+    geom_segment(aes(y = 0, yend = log10(n), color = color)) +
+    geom_point(aes(y = log10(n), fill = color), shape = 21, size = 0.75) +
+    geom_vline(aes(xintercept = 21), lty = 2, color = "maroon") +
+    scale_fill_identity() +
+    scale_color_identity() +
+    scale_x_discrete(breaks = seq(0, 50, 10)) +
+    facet_grid(cut_height ~ min_size) +
+    labs(y = "log10(N genes)", 
+         title = "B | Module assignments across WGCNA parameters"
+    ) +
+    theme(
+        strip.text = element_text(size = 9),
+        axis.title = element_text(size = 8),
+        axis.text = element_text(size = 8)
+    )
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supp_figures_dir, "S6B.module_sizes", .x), 
+                width = 5, height = 6.5)
+)
+```

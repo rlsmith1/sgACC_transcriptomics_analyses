@@ -1,5 +1,5 @@
 ---
-title: "02a. Load transcript-level GRCCA results (FULL)"
+title: "02c-02a. Load transcript-level GRCCA results (FULL)"
 author: "Rachel Smith"
 format: html
 editor: visual
@@ -79,9 +79,9 @@ save(df_results_ALLtranscripts, df_lvs_ALLtranscripts,
 
 ## Plot
 
-### Figure S13A \| Optimal model for all transcripts
+### Figure S17A \| Optimal model for all transcripts
 
-```{r FigS13a.plot, fig.width=6.5, fig.height=5}
+```{r FigS17a.plot, fig.width=6.5, fig.height=5}
 df_results_ALLtranscripts %>% 
     mutate(significant = ifelse(pval == 0.001, "yes", "no")) %>%
     
@@ -103,13 +103,14 @@ df_results_ALLtranscripts %>%
 
 map(
   .x = c(".png", ".pdf"),
-  .f = ~ ggsave(paste0(supp_figures_dir, "S13A.optimal_model_all_transcripts", .x), width = 6.5, height = 5)
+  .f = ~ ggsave(paste0(supp_figures_dir, "S17A.optimal_model_all_transcripts", .x), 
+                width = 6.5, height = 5)
 )
 ```
 
-### Figure S13B \| Covariate correlations with the latent variable (all transcripts)
+### Figure S17B \| Covariate correlations with the latent variable (all transcripts)
 
-```{r FigS13b.plot, fig.width=6.5, fig.height=5}
+```{r FigS17b.plot, fig.width=6.5, fig.height=5}
 df_y_res_ALLtranscripts %>% 
     mutate(significant = ifelse(abs(z_score) >= 2 & p_adj < 0.05, "*", "")) %>% 
     
@@ -134,7 +135,7 @@ df_y_res_ALLtranscripts %>%
 
 map(
   .x = c(".png", ".pdf"),
-  .f = ~ ggsave(paste0(supp_figures_dir, "S13B.covariate_correlations_all_transcripts", .x), 
+  .f = ~ ggsave(paste0(supp_figures_dir, "S17B.covariate_correlations_all_transcripts", .x), 
                 width = 6.5, height = 5)
 )
 ```

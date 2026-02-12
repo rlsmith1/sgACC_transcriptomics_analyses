@@ -1,5 +1,5 @@
 ---
-title: "03. Characterize normative developmental expression of GRCCA results deciles"
+title: "02b-03. Characterize normative developmental expression of GRCCA results deciles"
 author: "Rachel Smith"
 format: html
 editor: visual
@@ -53,5 +53,57 @@ df_psychencode_grcca <- df_psychencode_expr_filt %>%
 ## Save for figures
 save(df_psychencode_grcca,
      file = paste0(objects_dir, "GRCCA_developmental_expression.RDS")
+)
+```
+
+## Plots
+
+### Figure S23 \| Developmental expression trajectories of GRCCA genes
+
+```{r FigS23.prep}
+## Calculate the mean expression for each decile of GRCCA results across development
+df_figS23 <- df_psychencode_grcca %>% #dplyr::filter(regioncode == "MFC") %>% 
+    group_by(decile, window) %>% 
+    summarise(median_expression = median(dev_expression),
+              sd_expression = sd(dev_expression)
+    )
+
+## Rename windows with time period
+psychencode_windows <- c("5-9",
+                "12-13",
+                "16-18",
+                "19-22",
+                "PCW35-PY0.3",
+                "0.5-2.5",
+                "2.8-10.7",
+                "13-19",
+                "21-64")
+names(psychencode_windows) = 1:9  
+
+## Define colors for deciles
+decile_colors <- colorRampPalette(c(gene_weight_color_scale[5], "gray", gene_weight_color_scale[95]))(10) %>% rev
+```
+
+```{r FigS23, fig.height = 3, fig.width = 4}
+df_figS23 %>% 
+    ggplot(aes(x = window, y = median_expression, color = decile)) +
+    geom_vline(xintercept = 5, color = "gray") +
+    geom_smooth(method = "loess", se = FALSE) +
+    scale_x_continuous(breaks = seq(1, length(psychencode_windows), 1),
+                       labels = psychencode_windows) +
+    scale_color_manual(values = decile_colors) +
+    guides(color = guide_legend()) +
+    labs(x = "← PCW | PY →", y = "Median expression",
+         title = "Developmental expression trends") +
+    theme(
+        legend.key.size = unit(0.3, "cm"),
+        axis.text.x = element_text(angle = 45, hjust = 1)
+    )
+
+## Save
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supp_figures_dir, "S23.developmental_trajectory", .x), 
+                width = 4, height = 3)
 )
 ```

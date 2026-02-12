@@ -1,5 +1,5 @@
 ---
-title: "01. Identify qSVs using transcript counts and qsvaR"
+title: "00-01. Identify qSVs using transcript counts and qsvaR"
 author: "Rachel Smith"
 format: html
 editor: visual
@@ -14,8 +14,6 @@ knitr::opts_chunk$set(echo = TRUE)
 base_dir <- "~/Documents/PhD/projects/sgacc_wgcna_grcca/"
 objects_dir <- paste0(base_dir, "outputs/objects/")
 supp_figures_dir <- paste0(project_dir, "outputs/figures/supplement/")
-
-## Set plot aesthetics
 ```
 
 ## Libraries
@@ -346,14 +344,14 @@ df_figS2b <- df_covariate_qsv_cor %>%
         p_adj < 0.01 ~ "**",
         TRUE ~ ""
     ),
-           #covariate = factor(covariate, levels = covariate_order),
            type = case_when(
                covariate %in% technical_covariates ~ "Technical",
                covariate %in% biological_covariates ~ "Biological",
                covariate %in% drug_covariates ~ "Toxicological",
                TRUE ~ "Diagnostic group"
            ) %>% 
-               factor(levels = c("Diagnostic group", "Technical", "Toxicological", "Biological"))
+               factor(levels = 
+                          c("Diagnostic group", "Technical", "Toxicological", "Biological"))
     ) %>% 
     filter(type != "Diagnostic group") %>% 
     arrange(type, qsv, pearsons_r) %>% 
@@ -366,7 +364,6 @@ df_figS2b %>%
     geom_tile(aes(fill = pearsons_r), width = 0.98, height = 0.98) +
     geom_text(aes(label = significance), vjust = 0.75) +
     facet_wrap(vars(type), scales = "free", space = "free_y", ncol = 1) +
-    #force_panelsizes(rows = c(length(biological_covariates), length(drug_covariates), length(technical_covariates))) +
     
     scale_fill_gradientn(colors = rev(brewer.rdbu(100))) +
     coord_cartesian(clip = "off") +

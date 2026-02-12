@@ -1,5 +1,5 @@
 ---
-title: "04a. Run Multiple Correspondence Analysis on toxicology data across samples"
+title: "00-04a. Run Multiple Correspondence Analysis on toxicology data across samples"
 author: "Rachel Smith"
 format: html
 editor: visual
@@ -20,6 +20,8 @@ objects_dir <- paste0(base_dir, "outputs/objects/")
 library(tidyverse)
 library(DESeq2)
 library(MASS)
+library(cowplot)
+library(pals)
 ```
 
 ## Load data
@@ -129,9 +131,9 @@ df_mca_covar_cor <- expand_grid(
 ## Save
 
 ```{r save}
-# save(df_var_loadings, df_ind_loadings,
-#      file = paste0(objects_dir, "drug_MCA_results.Rdata")
-# )
+save(df_var_loadings, df_ind_loadings,
+     file = paste0(objects_dir, "drug_MCA_results.Rdata")
+)
 ```
 
 ## Plots
@@ -157,6 +159,9 @@ dx_colors <- c(
     "MDD" = "#009E73", 
     "SCZ" = "#9966FF"
 )
+
+## Define color scale
+gene_weight_color_scale <- brewer.rdbu(100) %>% rev
 ```
 
 ### Figure S3A \| Matrix of drug use across 185 samples
@@ -315,7 +320,7 @@ df_figS3a %>%
 ## Save
 map(
     .x = c(".png", ".pdf"),
-    .f = ~ ggsave(paste0(supp_igures_dir, "S3A.sample_toxicology_matrix", .x), 
+    .f = ~ ggsave(paste0(supp_figures_dir, "S3A.sample_toxicology_matrix", .x), 
                   width = 6.5, height = 2.25)
 )
 ```
@@ -379,8 +384,9 @@ df_figS3c %>%
                          limits = c(-scale_max, scale_max), name = "Loading") +
     scale_color_manual(values = c("yes" = "black", "no" = "transparent"), guide = "none") +
     scale_size_continuous(limits = c(0, scale_max), range = c(0.1, 5), guide = "none") +
-    guides(fill = guide_colorbar(title = "Loading", title.position = "top", title.hjust = 0.5)) +
-    
+    guides(fill = guide_colorbar(title = "Loading", 
+                                 title.position = "top", 
+                                 title.hjust = 0.5)) +
     coord_cartesian(clip = "off") +
     labs(y = NULL, x = NULL, 
          title = "C | Variable loadings") +
@@ -442,21 +448,13 @@ df_figS3d <- df_mca_covar_cor %>%
 
 ```{r FigS3d.plot, fig.width = 6.5, fig.height = 3.4}
 df_figS3d %>% 
-    #filter(covariate != "Tecnical") %>% # Remove technical for now?
-    
+
     # Layout
     ggplot(aes(x = covariate, y = dimension)) +
     geom_point(aes(fill = pearsons_r, size = abs(pearsons_r), color = significant), 
                shape = 21) +
     
-    facet_wrap(vars(type), scales = "free_x", nrow = 1) +
-    force_panelsizes(cols = c(
-        length(dx_colors), 
-        length(biological_covariates),
-        length(technical_covariates) - 2,
-        length(drug_covariates)
-    )
-    ) +
+    facet_wrap(vars(type), scales = "free_x", space = "free_x", nrow = 1) +
     
     # Aesthetics
     scale_fill_gradientn(colors = rev(brewer.rdbu(100)), limits = c(-1.0, 1.0), name = "r") +

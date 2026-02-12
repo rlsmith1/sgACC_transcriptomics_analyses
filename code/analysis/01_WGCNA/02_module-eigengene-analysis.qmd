@@ -1,5 +1,5 @@
 ---
-title: "02. Identify WGCNA modules that are associated with psychiatric diagnosis using the traditional module eigengene approach"
+title: "01-02. Identify WGCNA modules that are associated with psychiatric diagnosis using the traditional module eigengene approach"
 author: "Rachel Smith"
 format: html
 editor: visual
@@ -193,5 +193,101 @@ save(df_mods_pca_covariates, df_lm_dx_allPCs,
 )
 save(df_kme,
     file = paste0(objects_dir, "kME_analysis_res.RDS")
+)
+```
+
+## Export module eigengene results as supplemental table
+
+```{r tableS8}
+write_xlsx(df_kme %>% 
+               dplyr::filter(p_value < 0.05 & pc == "PC1") %>% 
+               dplyr::select(-c(data, pc, proportion_of_variance, estimate, std_error)),
+           path = paste0(tables_dir, "TableS8.kME_analysis_significant_results.xlsx")
+)
+```
+
+## Plots
+
+### Figure S20A \| Module eigengene-covariate associations
+
+```{r FigS20a.prep}
+df_figS20a <- df_lm_dx_allPCs %>% 
+    filter(module != "geneM0" & pc == "PC1") %>% 
+    mutate(term = str_replace(term, "MC", "Dim")) %>% 
+    mutate(term = factor(term, levels = c(paste0("Dim", 8:1), names(dx_colors)))) %>%
+    mutate(significant = ifelse(p_value < 0.05, "yes", "no")) %>% 
+    arrange(abs(statistic))
+```
+
+```{r FigS20a.plot, fig.height = 3, fig.width = 6.5}
+df_figS20a %>% 
+    ggplot(aes(x = module, y = term)) +
+    geom_hline(yintercept = 8.5, color = "gray") +
+    geom_point(aes(fill = statistic, size = abs(statistic), color = significant), shape = 21) +
+    scale_fill_gradientn(colors = gene_weight_color_scale, limits = c(-3.3, 3.3)) +
+    scale_color_manual(values = c("yes" = "black", "no" = "grey")) +
+    scale_size_continuous(limits = c(0, 3.3), range = c(0.5, 5), guide = "none") +
+    guides(fill = guide_colorbar(title = "t-statistic", 
+                                 title.position = "top", 
+                                 title.hjust = 0.5),
+           color = guide_legend(title = "P < 0.05", 
+                                title.position = "top", 
+                                title.hjust = 0.5)
+    ) +
+    coord_cartesian(clip = "off") +
+    labs(x = NULL, y = NULL,
+         title = "A | Module eigengene - covariate associations"
+    ) +
+    theme(
+        legend.position = "bottom",
+        legend.justification = "center",
+        legend.margin = margin(t = -10),
+        legend.key.height = unit(0.15, "cm"),
+        legend.key.width = unit(0.75, "cm"),
+        axis.text.x = element_text(size = 8.5, angle = 45, hjust = 0.9)
+    )
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supp_figures_dir, "S20a.module_kme_covar_matrix", .x), 
+                width = 6.5, height = 3)
+)
+```
+
+### Figure S20B \| Modules significantly associated with SCZ per module eigengene analysis
+
+```{r FigS20b.prep}
+df_figS20b <- df_lm_dx_allPCs %>% 
+    dplyr::filter(p_value < 0.05 & term == "SCZ" & pc == "PC1") %>% 
+    unnest(cols = c(data)) %>% 
+    mutate(label = case_when(
+        dx == "SCZ" & p_value < 0.05 & p_adj > 0.05 ~ "*",
+        dx == "SCZ" & p_value < 0.05 & p_adj < 0.05 ~ "**",
+        TRUE ~ ""
+    )
+    )
+```
+
+```{r FigS20b.plot, fig.height = 3, fig.width = 6.5}
+df_figS20b %>% 
+    ggplot(aes(x = pc_resids, y = dx, color = dx, fill = dx)) +
+    geom_point(position = position_jitter(width = 0.1), size = 0.5, alpha = 0.75) +
+    geom_boxplot(alpha = 0.1, outlier.shape = NA) +
+    # geom_text(aes(label = label, x = -Inf), color = "black", size = 6,
+    #           vjust = 0.75, hjust = -0.1, check_overlap = TRUE) +
+    facet_wrap(vars(module), ncol = 3, scales = "free_x") +
+    scale_fill_manual(values = dx_colors) +
+    scale_color_manual(values = dx_colors) +
+    labs(x = "kME (corrected for covariates)", y = NULL,
+         #caption = "* = p < 0.05; ** = FDR < 0.05",
+         title = "B | Module - SCZ associations"
+    ) +
+    theme(legend.position = "none",
+          axis.text.y = element_text(size = 10)
+    )
+
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supp_figures_dir, "S20B.sig_SCZ_kME_modules", .x), 
+                width = 6.5, height = 3)
 )
 ```

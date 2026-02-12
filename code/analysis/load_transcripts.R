@@ -6,7 +6,7 @@
 ## Note: This script can only be run after 00_preprocessing
 
 base_dir <- "~/Documents/PhD/projects/sgacc_wgcna_grcca/"
-source(paste0(base_dir, "scripts/setup.R"))
+source(paste0(base_dir, "code/analysis/setup.R"))
 
 
 ### SET DIRECTORY AND LOAD DATA ###

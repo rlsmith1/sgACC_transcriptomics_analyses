@@ -7,7 +7,7 @@
 
 
 base_dir <- "~/Documents/PhD/projects/sgacc_wgcna_grcca/"
-source(paste0(base_dir, "scripts/load_genes.R"))
+source(paste0(base_dir, "code/analysis/load_genes.R"))
 
 ## Set parameters for module set of interest
 soft_power <- 3

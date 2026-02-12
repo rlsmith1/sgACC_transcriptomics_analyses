@@ -1,5 +1,5 @@
 ---
-title: "01. Load and formatGRCCA results"
+title: "02b-01. Load and formatGRCCA results"
 author: "Rachel Smith"
 format: html
 editor: visual
@@ -143,6 +143,21 @@ df_rx_expr_cor_perm_pvals <- df_rx_expr_cor_perm %>%
 ```{r save}
 save(df_lvs, df_results, df_y_res, df_x_res, df_rx_expr_cor_perm_pvals,
     file = paste0(objects_dir, "GRCCA_results.Rdata")
+)
+```
+
+## Export results table for supplement
+
+```{r tableS2}
+write_xlsx(list("A.GRCCA results" = df_results %>% 
+                    dplyr::select(-set) %>% 
+                    dplyr::select(varx, everything()),
+                "B.Covariate (Y) results" = df_y_res %>%
+                    dplyr::rename("structure_correlation" = "pearsons_r"),
+                "C.Gene (X) results" = df_x_res %>% 
+                    dplyr::rename("structure_correlation" = "pearsons_r")
+), 
+path = paste0(tables_dir, "TableS2.GRCCA_results.xlsx")
 )
 ```
 
@@ -333,5 +348,66 @@ map(
   .x = c(".png", ".pdf"),
   .f = ~ ggsave(paste0(figures_dir, "2E.gene_strucCor_vs_Expr", .x), 
                 width = 4.0, height = 2)
+)
+```
+
+### Figure S9 \| Covariate weights
+
+```{r FigS9.plot}
+df_y_res %>% 
+    mutate(significant = ifelse(abs(z_score) >= 2 & p_adj < 0.05, "*", "")) %>% 
+    
+    ggplot(aes(x = reorder(covariate, weight), y = weight)) +
+    geom_col(aes(fill = covariate, alpha = abs(weight)), color = "black") +
+    geom_errorbar(aes(ymin = weight - sd, ymax = weight + sd), width = 0.2) +
+    geom_text(aes(label = significant, y = 0), size = 6, vjust = 1.5) +
+    geom_hline(aes(yintercept = 0), color = "black") +
+    
+    scale_fill_manual(values = c(dx_colors, rep("gray", 6))) +
+    scale_alpha_continuous(range = c(0.1, 1)) +
+    scale_x_discrete(labels = function(x) {str_replace(x, "_", " ")}) +
+    ylim(c(-0.10, 0.10)) +
+    labs(x = "", y = "weight", 
+         title = "Covariate weights",
+    ) +
+    theme(legend.position = "none",
+          axis.text.x = element_text(angle = 45, hjust = 0.9)
+          )
+
+## Save
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supp_figures_dir, "S9.geneLevel_covariate_weights", .x), 
+                width = 2.5, height = 2)
+)
+```
+
+### Figure S10 \| Vector of significant GRCCA genes (FDR_r \< 0.05 & Z-score \> 2)
+
+```{r FigS10.plot, fig.height = 3}
+df_x_res %>% 
+    dplyr::filter(p_adj < 0.05 & abs(z_score) >= 2) %>% 
+    
+    ggplot(aes(x = pearsons_r, y = reorder(ensembl_gene_id, pearsons_r))) +
+    geom_col(aes(fill = pearsons_r)) +
+    geom_vline(xintercept = 0, color = "gray") +
+    scale_fill_gradientn(colors = gene_weight_color_scale, limits = c(-1, 1)) +
+    guides(fill = guide_colorbar(title = expression(italic(r)[x]))) +
+    xlim(c(-1, 1)) +
+    labs(y = "Gene", 
+         x = expression("Structure correlation (" * italic(r)[x] * ")"), 
+         title = "Significant GRCCA genes"
+    ) +
+    theme(axis.text.y = element_blank(), 
+          axis.ticks.y = element_blank(),
+          legend.position = c(0.15, 0.70), 
+          legend.box = "horizontal",
+          legend.key.width = unit(0.15, "cm"),
+          legend.key.height = unit(0.6, "cm")
+    )
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supp_figures_dir, "S10.significant_GRCCA_genes_all", .x), 
+                width = 2.5, height = 3)
 )
 ```

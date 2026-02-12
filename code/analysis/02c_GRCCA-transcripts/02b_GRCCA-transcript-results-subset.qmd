@@ -1,5 +1,5 @@
 ---
-title: "02b. Load transcript-level GRCCA results (SUBSET)"
+title: "02c-02b. Load transcript-level GRCCA results (SUBSET)"
 author: "Rachel Smith"
 format: html
 editor: visual
@@ -80,35 +80,21 @@ save(df_results_transcripts, df_lvs_transcripts,
 )
 ```
 
-## Plots
+## Export transcript-level GRCCA results as supplement table
 
-### Figure S13C \| Optimal model for subset transcripts
-
-```{r FigS13c.plot, fig.width=6.5, fig.height=5}
-df_results_transcripts %>% 
-    mutate(significant = ifelse(pval == 0.001, "yes", "no")) %>% 
-    ggplot(aes(x = factor(varx*100), y = -log10(pval))) +
-    geom_segment(aes(y = 0, yend = -log10(pval))) +
-    geom_point(aes(size = correl, shape = significant, fill = -log10(pval))) +
-    geom_hline(yintercept = 0, color = "darkgrey") +
-    scale_shape_manual(values = c("yes" = 23, "no" = 21), guide = "none") +
-    scale_fill_gradient(low = "white", high = "#67001F", limits = c(0, 3), guide = "none") +
-    guides(size = guide_legend(title = "X-Y LV correlation", override.aes = list(shape = 21))) +
-    coord_cartesian(clip = "off") +
-    labs(x = "X variance explained (%)", y = "-log10(model p-value)",
-         title = "C | Optimal variance explained \nby model (subset transcripts)"
-    ) +
-    theme(
-        legend.position = c(0.55, 0.75),
-        legend.key.size = unit(0.1, "cm")
-    )
-
-map(
-  .x = c(".png", ".pdf"),
-  .f = ~ ggsave(paste0(supp_figures_dir, "S13C.optimal_model_subset_transcripts", .x),
-                width = 6.5, height = 5)
+```{r tableS6}
+write_xlsx(list("A.GRCCA results" = df_results_transcripts %>% 
+                    dplyr::select(-set) %>% 
+                    dplyr::select(varx, everything()),
+                "B.Covariate (Y) results" = df_y_res_transcripts %>% 
+                    dplyr::rename("structure_correlation" = "pearsons_r"),
+                "C. Transcript (X) results" = df_x_res_transcripts %>% 
+                    dplyr::rename("structure_correlation" = "pearsons_r")), 
+           path = paste0(tables_dir, "TableS6.GRCCA_transcript_results.xlsx")
 )
 ```
+
+## Plots
 
 ### Figure S5A \| Covariate structure correlations (ry)
 
@@ -262,3 +248,34 @@ map(
                 width = 3.75, height = 4.15)
 )
 ```
+
+### Figure S17C \| Optimal model for subset transcripts
+
+```{r FigS17c.plot, fig.width=6.5, fig.height=5}
+df_results_transcripts %>% 
+    mutate(significant = ifelse(pval == 0.001, "yes", "no")) %>% 
+    ggplot(aes(x = factor(varx*100), y = -log10(pval))) +
+    geom_segment(aes(y = 0, yend = -log10(pval))) +
+    geom_point(aes(size = correl, shape = significant, fill = -log10(pval))) +
+    geom_hline(yintercept = 0, color = "darkgrey") +
+    scale_shape_manual(values = c("yes" = 23, "no" = 21), guide = "none") +
+    scale_fill_gradient(low = "white", high = "#67001F", limits = c(0, 3), guide = "none") +
+    guides(size = guide_legend(title = "X-Y LV correlation", 
+                               override.aes = list(shape = 21))) +
+    coord_cartesian(clip = "off") +
+    labs(x = "X variance explained (%)", y = "-log10(model p-value)",
+         title = "C | Optimal variance explained \nby model (subset transcripts)"
+    ) +
+    theme(
+        legend.position = c(0.55, 0.75),
+        legend.key.size = unit(0.1, "cm")
+    )
+
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supp_figures_dir, "S17C.optimal_model_subset_transcripts", .x),
+                width = 6.5, height = 5)
+)
+```
+
+### 

@@ -1,5 +1,5 @@
 ---
-title: "04. Assess the relationship between DEG test statistics and GRCCA structure correlations"
+title: "02b-04. Assess the relationship between DEG test statistics and GRCCA structure correlations"
 author: "Rachel Smith"
 format: html
 editor: visual

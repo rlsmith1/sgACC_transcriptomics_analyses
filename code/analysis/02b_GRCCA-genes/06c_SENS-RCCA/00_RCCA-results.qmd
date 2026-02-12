@@ -1,0 +1,155 @@
+---
+title: "02b-06c-00. Sensitivity analyses: Load gene-level RCCA results"
+author: "Rachel Smith"
+format: html
+editor: visual
+---
+
+Load and process Regularized CCA (RCCA) results for sensitivity analysis.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+base_dir <- "~/Documents/PhD/projects/sgacc_wgcna_grcca/"
+```
+
+## Setup
+
+```{r load_data}
+source(paste0(base_dir, "scripts/load_WGCNA_res.R"))
+```
+
+## Load data
+
+```{r load_rcca}
+## Identify CCA directory
+n_mca_dim <- 8
+type <- "GENES/"
+project_dir <- paste0(
+    prefix,
+    "_sft", soft_power, "_minSize", minimum_size, "_cutHeight", tree_cut_height, "_",
+    n_mca_dim, "MCA_regressBrainWeight_WITHGRAY/"
+)
+cca_dir <- paste0(base_dir, "RCCA_toolkit/", type, project_dir)
+
+## Read in RCCA analysis results
+analysis_type <- "rcca"
+VARx <- "0.1_1"
+l_rcca_res <- f_load_cca_res(
+    cca_directory = cca_dir,
+    level = "gene",
+    analysis_type = analysis_type,
+    mu = 0.1,
+    VARx = VARx,
+    include_Cmat = FALSE
+)
+
+## Assign results to tibbles; negate everything so SCZ is positive
+df_results_rcca <- l_rcca_res$model_results
+df_lvs_rcca <- l_rcca_res$latent_variables %>% mutate_at(vars(c(lvx, lvy)), ~ -.x)
+df_y_res_rcca <- l_rcca_res$y_res %>% mutate_at(vars(c(weight, z_score, pearsons_r)), ~ -.x)
+df_x_res_rcca <- l_rcca_res$x_res %>%
+    mutate_at(vars(c(weight, z_score, pearsons_r)), ~ -.x) %>%
+    left_join(df_ensembl_to_symbol) %>%
+    left_join(df_modules_filt %>% dplyr::select(-c(mod_set, color)), by = join_by(ensembl_gene_id)) %>%
+    dplyr::select(ensembl_gene_id, gene_symbol, module, everything()) %>%
+    mutate(gene_symbol = ifelse(is.na(gene_symbol), ensembl_gene_id, gene_symbol))
+```
+
+## Save
+
+```{r save}
+# Figures
+save(df_lvs_rcca, df_y_res_rcca, df_x_res_rcca,
+    file = paste0(objects_dir, "RCCA_results.Rdata")
+)
+```
+
+## Export RCCA results as supplemental table
+
+```{r tableS9}
+write_xlsx(list("A.RCCA results" = df_results_rcca %>% 
+                    dplyr::select(-set) %>% 
+                    dplyr::select(varx, everything()),
+                "B.Covariate (Y) results" = df_y_res_rcca %>% 
+                    dplyr::rename("structure_correlation" = "pearsons_r"),
+                "C.Gene (X) results" = df_x_res_rcca %>% 
+                    dplyr::rename("structure_correlation" = "pearsons_r")), 
+           path = paste0(tables_dir, "TableS9.RCCA_results.xlsx")
+)
+```
+
+## Plots
+
+### Figure S13A \| Correlate GRCCA and RCCA covariate (y) structure correlations
+
+```{r FigS13a.plot}
+df_y_res_all %>% 
+    pivot_wider(id_cols = covariate, names_from = analysis, values_from = pearsons_r) %>% 
+    ggplot(aes(x = rcca, y = grcca)) +
+    geom_point(aes(fill = rcca + grcca), shape = 21, size = 2.5) +
+    geom_vline(aes(xintercept = 0), color = "gray") +
+    geom_hline(aes(yintercept = 0), color = "gray") +
+    geom_abline(lty = 2) +
+    geom_text_repel(aes(label = covariate), size = 2.5, max.overlaps = 20, 
+                    box.padding = 1.25, nudge_y = 0.3, force = 150) +
+    scale_fill_gradientn(colors = gene_weight_color_scale, 
+                         limits = c(-1.84, 1.84), 
+                         guide = "none") +
+    labs(title = "A | Covariate structure correlations",
+         x = "RCCA", y = "GRCCA")
+
+## Save
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supp_figures_dir, "S13A.covariate_structCor_correlation", .x), 
+                width = 2.5, height = 2)
+)
+```
+
+### Figure S13B \| Correlate GRCCA and RCCA gene (x) structure correlations
+
+```{r FigS13b.plot}
+df_x_res_all %>% 
+    pivot_wider(id_cols = ensembl_gene_id, 
+                names_from = analysis, 
+                values_from = pearsons_r) %>%
+    
+    ggplot(aes(x = rcca, y = grcca)) +
+    geom_point(aes(color = rcca + grcca), size = 1) +
+    geom_vline(aes(xintercept = 0), color = "gray") +
+    geom_hline(aes(yintercept = 0), color = "gray") +
+    geom_abline(lty = 2) +
+    stat_cor(label.sep = "\n") +
+    scale_color_gradientn(colors = gene_weight_color_scale, 
+                          limits = c(-1.14, 1.14), 
+                          guide = "none") +
+    labs(title = "B | Gene structure correlations",
+         x = "RCCA", y = "GRCCA")
+
+## Save
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supp_figures_dir, "S13B.gene_structCor_correlation", .x), 
+                width = 2.5, height = 2)
+)
+```
+
+### Figure S13C \| Venn diagram of significant gene overlap
+
+Made in PowerPoint
+
+```{r FigS13c.prep}
+## Venn diagram (overlap with Nirmala's results)
+sig_grcca_genes <- df_x_res %>%
+    dplyr::filter(p_adj < 0.05 & abs(z_score) > 2) %>%
+    pull(ensembl_gene_id)
+sig_rcca_genes <- df_x_res_rcca %>% 
+    dplyr::filter(p_adj < 0.05 & abs(z_score) > 2) %>% 
+    pull(ensembl_gene_id)
+length(sig_grcca_genes) # N = 1211
+length(sig_rcca_genes) # N = 2026
+hypergeometric_overlap <- f_hypergeometric(sig_grcca_genes, 
+                                           sig_rcca_genes, 
+                                           gene_universe = ensembl_gene_ids)
+length(hypergeometric_overlap$overlap_genes) # N = 855; P < 0.0001
+```

@@ -1,5 +1,5 @@
 ---
-title: "04. GRCCA transcript vs gene correlation"
+title: "02c-04. GRCCA transcript vs gene correlation"
 author: "Rachel Smith"
 format: html
 editor: visual

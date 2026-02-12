@@ -1,5 +1,5 @@
 ---
-title: "02a. Genes raw count preprocessing"
+title: "00-02a. Genes raw count preprocessing"
 author: "Rachel Smith"
 format: html
 editor: visual
@@ -487,12 +487,13 @@ df_figS2c %>%
     geom_tile(aes(fill = pearsons_r), width = 0.98, height = 0.98, linewidth = 0.5) +
     geom_text(aes(label = significance), vjust = 0.75, angle = 90) +
     
-    facet_grid2(regression ~ type, scales = "free") +
-    force_panelsizes(rows = c(1, 4), cols = c(16, length(biological_covariates), length(drug_covariates), length(technical_covariates))) +
+    facet_grid2(regression ~ type, scales = "free", space = "free_y") +
     scale_fill_gradientn(colors = rev(brewer.rdbu(100)), limits = c(-0.43, 0.43)) +
     scale_color_manual(values = c("yes" = "black", "no" = "transparent"), guide = "none") +
     coord_flip(clip = "off") +
-    guides(fill = guide_colorbar(title = "Pearson's r", title.hjust = 0.5, title.position = "top")) +
+    guides(fill = guide_colorbar(title = "Pearson's r", 
+                                 title.hjust = 0.5, 
+                                 title.position = "top")) +
     labs(x = "PC (> 2% explained var)", y = NULL,
          title = "C | PC-covariate correlations before and after regression") +
     theme(legend.position = c(0, -0.4),

@@ -1,5 +1,5 @@
 ---
-title: "00. Run differential expression analysis using Limma-voom"
+title: "03-00. Run differential expression analysis using Limma-voom"
 author: "Rachel Smith"
 format: html
 editor: visual
@@ -192,7 +192,7 @@ df_limma_res <- topTable(fit, coef = "dxSCZ", number = Inf) %>%
     arrange(-abs(log_fc))
 ```
 
-## Combine all differential expression results and save for plotting
+## Combine and save all differential expression results
 
 ```{r combine_results}
 ## Load Nirmala's DEG results
@@ -227,6 +227,15 @@ df_de_res_all <- df_deseq2_res %>%
 save(
     df_deseq2_res, df_limma_res, df_akula_res, df_de_res_all, 
     file = paste0(objects_dir, "DE_results.Rdata")
+)
+```
+
+## Export DGE results as table for supplement
+
+```{r tableS4}
+write_xlsx(
+    list("TableS4" = df_limma_res %>% arrange(-abs(t))), 
+    path = paste0(tables_dir, "TableS4.DEGs.xlsx")
 )
 ```
 
@@ -267,6 +276,101 @@ df_de_res_all %>%
     geom_smooth(method = "lm") +
     stat_cor() +
     facet_wrap(vars(metric), scales = "free")
+```
+
+## Stats
+
+Run permutation testing to assess the significant of relationships between Akula et al 2021 DEGs and our limma DEGs.
+
+```{r FigS16b.stats}
+### PERMUTE L2FC CORRELATION ###
+n_perm <- 10000
+df_limma_akula_cor_perm <- tibble()
+set.seed(0406)
+for (i in 1:n_perm) {
+    
+    if (i %% 100 == 0) {print(paste0("Running permutation ", i))}
+    
+    # Permute LFC within module
+    df_tmp <- df_de_res_all %>% 
+        left_join(df_modules_filt) %>%
+        filter(!is.na(Akula) & metric == "l2fc") %>% 
+        group_by(module) %>%
+        mutate(permuted_l2fc = sample(Limma, replace = FALSE))
+    
+    # Calculate correlation between permuted data and Nirmala's LFC
+    test <- cor.test(df_tmp$permuted_l2fc, df_tmp$Akula)
+    correlation <- test$estimate
+    p_value <- test$p.value
+
+    # Append to tibble
+    df_limma_akula_cor_perm <- df_limma_akula_cor_perm %>% 
+        bind_rows(
+            tibble(
+                perm = i,
+                correlation = correlation,
+                p_value = p_value
+            )
+        )
+    
+}
+
+## Calculate permutation p-values
+de_limma_akula_perm_p <- df_limma_akula_cor_perm %>% 
+    mutate(obs_corr = cor.test(
+        df_de_res_all %>% filter(!is.na(Akula) & metric == "l2fc") %>% pull(Limma), 
+        df_de_res_all %>% filter(!is.na(Akula) & metric == "l2fc") %>% pull(Akula), 
+        )$estimate
+    ) %>%
+    summarise(
+        perm_p = (sum(abs(correlation) >= abs(obs_corr)) + 1) / (n_perm + 1)
+    )
+#Pperm=1*10^-4
+
+
+### PERMUTE T-STAT CORRELATION ###
+n_perm <- 10000
+df_limma_akula_cor_perm <- tibble()
+set.seed(0406)
+for (i in 1:n_perm) {
+    
+    if (i %% 100 == 0) {print(paste0("Running permutation ", i))}
+    
+    # Permute LFC within module
+    df_tmp <- df_de_res_all %>% 
+        left_join(df_modules_filt) %>%
+        filter(!is.na(Akula) & metric == "t_stat") %>% 
+        group_by(module) %>%
+        mutate(permuted_t = sample(Limma, replace = FALSE))
+    
+    # Calculate correlation between permuted data and Nirmala's LFC
+    test <- cor.test(df_tmp$permuted_t, df_tmp$Akula)
+    correlation <- test$estimate
+    p_value <- test$p.value
+
+    # Append to tibble
+    df_limma_akula_cor_perm <- df_limma_akula_cor_perm %>% 
+        bind_rows(
+            tibble(
+                perm = i,
+                correlation = correlation,
+                p_value = p_value
+            )
+        )
+    
+}
+
+## Calculate permutation p-values
+de_limma_akula_perm_p <- df_limma_akula_cor_perm %>% 
+    mutate(obs_corr = cor.test(
+        df_de_res_all %>% filter(!is.na(Akula) & metric == "t_stat") %>% pull(Limma), 
+        df_de_res_all %>% filter(!is.na(Akula) & metric == "t_stat") %>% pull(Akula), 
+        )$estimate
+    ) %>%
+    summarise(
+        perm_p = (sum(abs(correlation) >= abs(obs_corr)) + 1) / (n_perm + 1)
+    )
+#Pperm=1*10^-4
 ```
 
 ## Plots
@@ -352,5 +456,90 @@ df_limma_res %>%
 map(
   .x = c(".png", ".pdf"),
   .f = ~ ggsave(paste0(figures_dir, "4B.top_10_DEGs", .x), width = 2.17, height = 2.0)
+)
+```
+
+### Figure S16A \| Compare limma DEG results with Akula et al 2021 & GRCCA res
+
+```{r FigS16a.prep}
+## Venn diagram (overlap with Nirmala's results)
+my_degs <- df_limma_res %>% dplyr::filter(p_value < 0.05) %>% pull(ensembl_gene_id)
+length(my_degs) # N = 1389
+
+akula_degs <- df_akula_res %>% 
+    dplyr::filter(pvalue < 0.05) %>% 
+    pull(ensembl_gene_id)
+length(akula_degs) # N = 1373
+
+sig_grcca_genes <- df_x_res %>% 
+    dplyr::filter(p_adj < 0.05 & abs(z_score) > 2) %>% 
+    pull(ensembl_gene_id)
+length(sig_grcca_genes) # N = 1211
+
+# Akula DEGs vs my DEGs
+hypergeometric_overlap <- f_hypergeometric(my_degs, akula_degs, gene_universe = ensembl_gene_ids)
+length(hypergeometric_overlap$overlap_genes) # N = 385; P = 1.9*10^-145; OR = 7.17
+
+# GRCCA vs my DEGs
+hypergeometric_overlap <- f_hypergeometric(my_degs, sig_grcca_genes, gene_universe = ensembl_gene_ids)
+length(hypergeometric_overlap$overlap_genes) # N = 203; P = 1.5*10^-29; OR = 2.77
+
+# GRCCA vs Akula DEGs
+hypergeometric_overlap <- f_hypergeometric(akula_degs, sig_grcca_genes, gene_universe = ensembl_gene_ids)
+length(hypergeometric_overlap$overlap_genes) # N = 285; P = 2.3*10^-85; OR = 5.19
+
+# Combine the data into a named list for ggvenn
+FigS16a_data <- list(
+  `Current study DEGs` = my_degs,
+  `Akula et al 2021 DEGs` = akula_degs,
+  `Significant GRCCA genes` = sig_grcca_genes
+)
+```
+
+```{r FigS16a.plot}
+ggvenn(
+    FigS16a_data, 
+    fill_color = c("#E0E0E0", "#E0E0E0", "#E0E0E0"),
+    stroke_size = 0.75,
+    text_size = 3,
+    set_name_size = 4,
+    show_percentage = FALSE) +
+    coord_fixed(clip = "off") +
+    theme_void() +
+    theme(
+        text = element_text(size = 8)
+    )
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(suppl_figures_dir, "S16A.DEG_GRCCA_venn_diagram", .x), 
+                width = 2.5, height = 2)
+)
+```
+
+### Figure S16B \| Correlation plot of L2FC
+
+```{r FigS16b.plot, fig.width = 4, fig.height = 2.25}
+df_de_res_all %>% 
+    mutate(metric = ifelse(metric == "l2fc", "L2FC", "t-statistic")) %>% 
+    
+    ggplot(aes(x = Akula, y = Limma)) +
+    geom_hline(yintercept = 0, color = "gray") +
+    geom_vline(xintercept = 0, color = "gray") +
+    geom_abline(lty = 2) +
+    geom_point(color = "darkgray", size = 0.25) +
+    geom_smooth(method = "lm", linewidth = 0.5, color = "maroon") +
+    stat_cor(label.sep = "\n", size = 3, vjust = 1) +
+    facet_wrap(vars(metric), scales = "free") +
+    #scale_color_gradientn(colors = rev(brewer.rdbu(100)), guide = "none") +
+    labs(
+        x = "Akula DGE (DESeq2)", y = "Current study DGE (Limma-voom)",
+        title = "B | Correlation between DGE analysis results"
+    )
+
+## Save
+map(
+  .x = c(".png", ".pdf"),
+  .f = ~ ggsave(paste0(supp_figures_dir, "S16B.DEG_correlation", .x), 
+                width = 4, height = 2.25)
 )
 ```

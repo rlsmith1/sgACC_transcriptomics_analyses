@@ -1,5 +1,5 @@
 ---
-title: "03. Filter transcripts based on coefficient of variation"
+title: "00-03. Filter transcripts based on coefficient of variation"
 author: "Rachel Smith"
 format: html
 editor: visual
@@ -39,7 +39,7 @@ df_transcript_raw_counts <- read.csv(paste0(base_dir, "data/transcript_count_mat
 
 ## Calculate transcript coefficient of variation
 
-[Selecting information features and reducing dimensionality](https://www.nature.com/articles/s41576-023-00586-w https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-10-193) (will need to pick arbitrary threshold)
+[Selecting information features and reducing dimensionality](https://www.nature.com/articles/s41576-023-00586-w%20https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-10-193) (will need to pick arbitrary threshold)
 
 We don't just want to filter on variance because variance scales with mean and some transcripts have very low expression. So we can use CV, which filters on variance relative to mean.
 
@@ -112,7 +112,7 @@ theme_set(theme_cowplot() +
 )
 ```
 
-### FIgure S1A \| Relationship between mean and standard deviation
+### Figure S1A \| Relationship between mean and standard deviation
 
 ```{r FigS1a.plot, fig.width = 2.6}
 df_mean_sd %>% 
@@ -132,7 +132,7 @@ map(
 )
 ```
 
-### FIgure S1B \| Relationship between mean and coefficient of variation
+### Figure S1B \| Relationship between mean and coefficient of variation
 
 ```{r FigS1b.plot, fig.width = 2.6}
 df_mean_sd %>% 
@@ -152,7 +152,7 @@ map(
 )
 ```
 
-### FIgure S1C \| Cutoff for coefficient of variation
+### Figure S1C \| Cutoff for coefficient of variation
 
 ```{r FigS1c.plot}
 df_mean_sd %>% 

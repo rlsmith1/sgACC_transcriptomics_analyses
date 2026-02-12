@@ -1,5 +1,5 @@
 ---
-title: "00. Define X.mat, Y.mat, and C.mat to include in (G)RCCA analysis"
+title: "02a-00. Define X.mat, Y.mat, and C.mat to include in (G)RCCA analysis"
 author: "Rachel Smith"
 format: html
 editor: visual
