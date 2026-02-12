@@ -26,4 +26,4 @@ The scripts directories are organized as follows:
 Individual scripts are commented to describe their specific purpose. For any questions on code/implementation, please email corresponding author at smith.rachel.lillian@gmail.com.
 
 
-![caption](outputs/figures/combined_panels/Fig1.jpg "Graphical abstract")
+![Graphical abstract](outputs/figures/main/00_combined_panels/Fig1.jpg)
